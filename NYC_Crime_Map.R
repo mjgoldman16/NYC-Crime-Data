@@ -4,10 +4,10 @@ library(chron)
 #D[using i, calculate j, grouped by k]
 
 #Loading in in the original file. 5580035 rows
-# nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny Project/Data/NYPD_Complaint_Data_Historic.csv",
-#                    header=TRUE)
+nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
+                   header=TRUE)
 
-#***TESTING
+#In order to keep the original file
 nyc_crimes = nyc_crimes_original
 
 #Removing columsn that are not relevant to mapping of the crime location
@@ -16,17 +16,12 @@ nyc_crimes[,c("CMPLNT_NUM","CMPLNT_TO_DT","CMPLNT_TO_TM","RPT_DT",
               "X_COORD_CD","Y_COORD_CD", "Lat_Lon") := NULL]
 
 #Only want felonies
-
 nyc_crimes = nyc_crimes[LAW_CAT_CD == "FELONY"]
 
-#***TESTING
+#***testing accuracy of the data to see if there are missing/inconsistent columns
 nyc_felony_desc = nyc_crimes %>% distinct(KY_CD, OFNS_DESC, PD_CD, PD_DESC) %>% 
   arrange(KY_CD)
 nyc_felony_desc = as.data.table(nyc_felony_desc)
-
-#Removing rows that do not have a lattitude or longittude(?) No. Want to save them for
-# the stats page. Maybe make a separate table to do a maps table and also make a stats table?
-# if not, have the map have an auto filter for observations that have both lat and long
 
 #Want to make it so you have the name of the public housing. 
 # (there are a few instances where they don't have a name, so it should just say Public Housing or Park)
@@ -38,11 +33,13 @@ nyc_crimes[,PREM_TYP_DESC := ifelse(PREM_TYP_DESC == "RESIDENCE - PUBLIC HOUSING
                                            paste(PREM_TYP_DESC,PARKS_NM,sep= " - "),
                                            PREM_TYP_DESC))]
 
-#lowering down to just get the 7 major crimes: Murder, Rape, Assault, Burglary, Robbery, 
-# Grand Larceny, and Grand Larceny Auto. Filtering on key since some OFNS_DESC have missing
-# entries but filled keys (eg: 105, 106, 109). Also has additional PD_DESC (more detailed 
-# description) which includes some of these crimes, but are limited by a different KY_CD key.
-# eg(PD_CD = RAPE 1, but CD is 233 is 104)
+#Filtering down to just get the 7 major crimes: Murder, Rape, Assault, Burglary, Robbery, 
+# Grand Larceny, and Grand Larceny Auto. Filtering on KY_CD since some OFNS_DESC have missing
+# entries but filled keys (eg: 105, 106, 109). Also has additional PD_DESC  filters (more detailed 
+# description) which includes some of these crimes, but different KY_CD key. eg(PD_CD = RAPE 1, but CD 
+# is 233 is 104).
+
+#KY_CD code:
 #101 = Murder/non-neglegent manslaughter, 104 = rape, 105 = robbery, 106 = felony assault
 # 107 = burglary, 109 = gran larceny, 110 = grand larceny of motor vehicle
 #Other interesting crimes to potentially look at: 124 = kidnapping, 119 = DUI, 117 = dangerous drugs
@@ -75,10 +72,12 @@ fix_RO = function() { list(105, "ROBBERY")}
 fix_GL = function() { list(109, "GRAND LARCENY")}
 
 #applying functions
-nyc_felony_desc = nyc_felony_desc[PD_CD == 157, c("KY_CD", "OFNS_DESC") := fix_RA()]
-nyc_felony_desc = nyc_felony_desc[PD_CD == 109, c("KY_CD", "OFNS_DESC") := fix_AS()]
-nyc_felony_desc = nyc_felony_desc[PD_CD == 397, c("KY_CD", "OFNS_DESC") := fix_RO()]
-nyc_felony_desc = nyc_felony_desc[PD_CD == 405 | PD_CD == 438, c("KY_CD", "OFNS_DESC") := fix_GL()]
+nyc_crimes = nyc_crimes[PD_CD == 157, c("KY_CD", "OFNS_DESC") := fix_RA()]
+nyc_crimes = nyc_crimes[PD_CD == 109, c("KY_CD", "OFNS_DESC") := fix_AS()]
+nyc_crimes = nyc_crimes[PD_CD == 397, c("KY_CD", "OFNS_DESC") := fix_RO()]
+nyc_crimes = nyc_crimes[PD_CD == 405 | PD_CD == 438, c("KY_CD", "OFNS_DESC") := fix_GL()]
+#One entry of fraud/theft was misclassified, so removing it
+nyc_crimes = nyc_crimes[!PD_CD == 739]
 
 
 #Cleaning the dates and times. Dropping data before 1/1/2006 (likely inaccurate)
