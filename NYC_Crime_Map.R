@@ -4,8 +4,9 @@ library(chron)
 #D[using i, calculate j, grouped by k]
 
 #Loading in in the original file. 5580035 rows
-nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
-                   header=TRUE)
+#Commited so you don't have to re-load the table into R. Just use the _original
+# nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
+#                    header=TRUE)
 
 #In order to keep the original file
 nyc_crimes = nyc_crimes_original
@@ -45,7 +46,7 @@ nyc_crimes[,PREM_TYP_DESC := ifelse(PREM_TYP_DESC == "RESIDENCE - PUBLIC HOUSING
 #Other interesting crimes to potentially look at: 124 = kidnapping, 119 = DUI, 117 = dangerous drugs
 # 118 = dangerous weapons
 
-#Murders
+                          #Murders
 nyc_crimes = nyc_crimes[KY_CD == 101 |
                           #Rapes
                           KY_CD == 104 |
@@ -75,12 +76,12 @@ fix_GL = function() { list(109, "GRAND LARCENY")}
 nyc_crimes = nyc_crimes[PD_CD == 157, c("KY_CD", "OFNS_DESC") := fix_RA()]
 nyc_crimes = nyc_crimes[PD_CD == 109, c("KY_CD", "OFNS_DESC") := fix_AS()]
 nyc_crimes = nyc_crimes[PD_CD == 397, c("KY_CD", "OFNS_DESC") := fix_RO()]
-nyc_crimes = nyc_crimes[PD_CD == 405 | PD_CD == 438, c("KY_CD", "OFNS_DESC") := fix_GL()]
-#One entry of fraud/theft was misclassified, so removing it
-nyc_crimes = nyc_crimes[!PD_CD == 739]
+nyc_crimes = nyc_crimes[PD_CD == 405 | PD_CD == 438 | PD_CD == 419, c("KY_CD", "OFNS_DESC") := fix_GL()]
+#Entries of fraud/theft were misclassified, so removing them. Also remove public administration/unclassified
+nyc_crimes = nyc_crimes[!(PD_CD == 739 | PD_CD == 779)]
 
 
-#Cleaning the dates and times. Dropping data before 1/1/2006 (likely inaccurate)
+#Cleaning the dates and times. Dropping data before 1/1/2006
 nyc_crimes$DATE = as.Date(nyc_crimes$CMPLNT_FR_DT,"%m/%d/%Y")
 nyc_crimes = nyc_crimes[DATE>"2005-12-31" & !(is.na(DATE))]
 
@@ -89,22 +90,27 @@ nyc_crimes = nyc_crimes[DATE>"2005-12-31" & !(is.na(DATE))]
 nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
                          format="%H:%M:%S")
 
-#Some data is marked as midnight the 24:00:00. Convert this to be midnight the same day, 
+#Some data is marked as midnight incorrectly (24:00:00). Convert this to be midnight the same day (00:00:00)
 #rather than out of bounds
 nyc_crimes = nyc_crimes[is.na(TIME)& CMPLNT_FR_TM=="24:00:00",TIME:=0]
 nyc_crimes = setorder(nyc_crimes,DATE,TIME)
 
+#Include the day of the week for the crimes
 nyc_crimes[,c("DOW"):=c(weekdays(DATE))]
+
+#Delete columns that are combined together or that were copied
 nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM") := NULL]
 nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "DOW","KY_CD", "OFNS_DESC", "PD_CD", "PD_DESC", 
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
-nyc_crimes[,.N,by=.(OFNS_DESC,year(DATE))]
 
-write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny Project/Data/NYC_CRIMES_SEMICLEAN.csv")
+write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
 
 View(nyc_crimes)
 
 View(nyc_felony_desc)
 
-#COMPARING DATA TO NYC 
+#still not an exact match to the summary data liste don the website:
+#http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls
+nyc_crimes[,.N,by=.(OFNS_DESC,year(DATE))]
+
