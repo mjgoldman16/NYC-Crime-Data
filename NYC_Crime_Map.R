@@ -71,14 +71,18 @@ fix_RA = function() { list(104, "RAPE")}
 fix_AS = function() { list(106, "FELONY ASSAULT")}
 fix_RO = function() { list(105, "ROBBERY")}
 fix_GL = function() { list(109, "GRAND LARCENY")}
+fix_GLA = function(){ list(110, "GRAND LARCENY OF MOTOR VEHICLE")}
 
 #applying functions
 nyc_crimes = nyc_crimes[PD_CD == 157, c("KY_CD", "OFNS_DESC") := fix_RA()]
 nyc_crimes = nyc_crimes[PD_CD == 109, c("KY_CD", "OFNS_DESC") := fix_AS()]
 nyc_crimes = nyc_crimes[PD_CD == 397, c("KY_CD", "OFNS_DESC") := fix_RO()]
 nyc_crimes = nyc_crimes[PD_CD == 405 | PD_CD == 438 | PD_CD == 419, c("KY_CD", "OFNS_DESC") := fix_GL()]
-#Entries of fraud/theft were misclassified, so removing them. Also remove public administration/unclassified
-nyc_crimes = nyc_crimes[!(PD_CD == 739 | PD_CD == 779)]
+nyc_crimes = nyc_crimes[PD_CD == 441, c("KY_CD", "OFNS_DESC") := fix_GLA()]
+
+#Entries of fraud/theft were misclassified. Similar for remove public administration/unclassified and
+#kidnapping. Don't want to drop murders though (since their PD_CD is NA)
+nyc_crimes = nyc_crimes[!(PD_CD == 739 | PD_CD == 779 | PD_CD == 186) | is.na(PD_CD)]
 
 
 #Cleaning the dates and times. Dropping data before 1/1/2006
@@ -104,13 +108,11 @@ nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "DOW","KY_CD", "OFNS_DESC
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
 
-write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
+# write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
 
 View(nyc_crimes)
 
-View(nyc_felony_desc)
-
-#still not an exact match to the summary data liste don the website:
+#still not an exact match to the summary data listedon the website:
 #http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls
 nyc_crimes[,.N,by=.(OFNS_DESC,year(DATE))]
 
