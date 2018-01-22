@@ -112,7 +112,7 @@ nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "DOW","KY_CD", "OFNS_DESC
 
 View(nyc_crimes)
 
-#still not an exact match to the summary data listedon the website:
+#still not an exact match to the summary data listed on the website:
 #http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls
 nyc_crimes[,.N,by=.(OFNS_DESC,year(DATE))]
 
