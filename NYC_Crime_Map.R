@@ -5,8 +5,8 @@ library(chron)
 
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
-# nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
-#                    header=TRUE)
+nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
+                   header=TRUE)
 
 #In order to keep the original file
 nyc_crimes = nyc_crimes_original
@@ -108,7 +108,7 @@ nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "DOW","KY_CD", "OFNS_DESC
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
 
-# write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
+write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
 
 View(nyc_crimes)
 
