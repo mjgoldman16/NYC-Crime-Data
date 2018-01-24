@@ -66,6 +66,12 @@ shinyServer(function(input, output, session){
   ##MAP REACTIVE
   filtered_map = nyc_crimes
   map_filter = reactive({
+    filtered_year = as.numeric(substr(input$date_map,1,4))
+    filtered_month = as.numeric(substr(input$date_map,6,7))
+    filtered_map = filtered_map %>% filter(.,YEAR == filtered_year)
+    filtered_map = filtered_map %>% filter(.,MONTH == filtered_month)
+    print(substr(input$date_map,6,7))
+    print(substr(input$date_map,1,4))
     filtered_map = filtered_map %>% filter(.,BORO_NM == input$boro_map)
     return(filtered_map)
   })
