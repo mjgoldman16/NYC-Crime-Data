@@ -4,42 +4,13 @@ shinyServer(function(input, output, session){
   ### CREATION OF THE MAP
   
   output$map = renderLeaflet({
-    leaflet() %>%
+    leaflet(map_filter()) %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
-      setView(-73.83, 40.7, 10)
-    ##START OF ADDING DATA PINPOINTS (CLUSTER)
-    # names(nyc_crimes) %>%
-    #   walk(function(df) {
-    #     l <<- l %>%
-    #       addMarkers(data=quakes.df[[df]],
-    #                  lng=~long, lat=~lat,
-    #                  label=~as.character(mag),
-    #                  popup=~as.character(mag),
-    #                  group = df,
-    #                  clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
-    #                  labelOptions = labelOptions(noHide = F,
-    #                                              direction = 'auto'))
-    #   })
+      setView(-73.83, 40.7, 10) %>%
+      addMarkers(~Longitude, ~Latitude,
+                   clusterOptions = markerClusterOptions())
   })
-  
-  # names(quakes.df) %>%
-  #   purrr::walk( function(df) {
-  #     l <<- l %>%
-  #       addMarkers(data=quakes.df[[df]],
-  #                  lng=~long, lat=~lat,
-  #                  label=~as.character(mag),
-  #                  popup=~as.character(mag),
-  #                  group = df,
-  #                  clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
-  #                  labelOptions = labelOptions(noHide = F,
-  #                                              direction = 'auto'))
-  #   })
-  # 
-  # l %>%
-  #   addLayersControl(
-  #     overlayGroups = names(quakes.df),
-  #     options = layersControlOptions(collapsed = FALSE)
-  #   )
+ 
   
   # ADDING IN INTERACTIVE LAYER TOGGLE
   observeEvent(input$boro_layer, {
@@ -91,19 +62,19 @@ shinyServer(function(input, output, session){
     filtered_data
   })
   ##END TABLE
-  ##MAP
+  
+  ##MAP REACTIVE
+  filtered_map = nyc_crimes
+  map_filter = reactive({
+    filtered_map = filtered_map %>% filter(.,BORO_NM == input$boro_map)
+    return(filtered_map)
+  })
   #name it filtered_map
   
   ##END MAP
   ###END OF REACTIVE
   
-  ###WARNINGS TO RESOLVE LIKELY TO DO WITH == VS %IN%
-  # Warning in BORO_NM == input$boro_filter :
-  #   longer object length is not a multiple of shorter object length
-  # Warning in TIME_OF_DAY == input$crime_time :
-  #   longer object length is not a multiple of shorter object length
-  # Warning in DOW == input$dow :
-  #   longer object length is not a multiple of shorter object length
+  
   
   ###OUTPUTTING THE INTERACTIVE DATA
   ###WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD
@@ -118,7 +89,34 @@ shinyServer(function(input, output, session){
   ###END OF TABLE OUTPUT
 })
 
+
+
+
+
+
+
+
+
+
+
+
 ####CODE TO REFERENCE IN CASE OF ERRORS
+
+
+##START OF ADDING DATA PINPOINTS (CLUSTER)
+# names(nyc_crimes) %>%
+#   walk(function(df) {
+#     l <<- l %>%
+#       addMarkers(data=quakes.df[[df]],
+#                  lng=~long, lat=~lat,
+#                  label=~as.character(mag),
+#                  popup=~as.character(mag),
+#                  group = df,
+#                  clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+#                  labelOptions = labelOptions(noHide = F,
+#                                              direction = 'auto'))
+#   })
+
 
 #BUILDING OF REACTIVE FILTER
 # crime_filter = reactive({

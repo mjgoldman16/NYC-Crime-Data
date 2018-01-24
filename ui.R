@@ -35,11 +35,9 @@ shinyUI(dashboardPage(
                             width = 330, height = "auto",
                             
                             h2("Data Filter"),
-                            dateInput("date_map", label = "Select a Date:",
-                                      format = "mm/yyyy",
-                                      value = "2006-01"
-                            ),
+                            dateInput("date_map", label = "Select a Date:", format = "mm/yyyy", value = "2006-01"),
                             selectInput("crime_map", label = h3("Select Crime:"), map_crimes),
+                            selectInput("boro_map", label = h3("Select a Borough:"), unique(nyc_crimes$BORO_NM)),
                             # selectInput("time", label = h3("Select a Time:"), crime_time),
                             checkboxInput("boro_layer", "Show Boroughs", value = FALSE)
 

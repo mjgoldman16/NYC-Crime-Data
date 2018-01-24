@@ -3,6 +3,8 @@ library(dplyr)
 library(chron)
 #D[using i, calculate j, grouped by k]
 
+###TO DO FILTER SO ALL DATA IS PROPER CASE
+
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
 nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
