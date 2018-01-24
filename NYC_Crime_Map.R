@@ -110,14 +110,14 @@ nyc_crimes[,c("DOW"):=c(weekdays(DATE))]
 
 
 #Delete columns that are combined together or that were copied
-nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM") := NULL]
-nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "TIME_OF_DAY", "DOW","KY_CD", "OFNS_DESC", "PD_CD", "PD_DESC", 
+nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM", "KY_CD", "PD_CD") := NULL]
+nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "TIME_OF_DAY", "DOW", "OFNS_DESC", "PD_DESC", 
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
 
 write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
 
-View(nyc_crimes)
+# View(nyc_crimes)
 
 #still not an exact match to the summary data listed on the website:
 #http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls

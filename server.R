@@ -2,6 +2,9 @@ shinyServer(function(input, output, session){
   
   
   ### CREATION OF THE MAP
+  ##NOTE ON RAPE
+  #"To further protect victim identities, rape and sex crime offenses are not geocoded, 
+  # although the precinct of occurrence is still included for precinct-by-precinct comparisons."
   output$map = renderLeaflet({
     leaflet() %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
@@ -17,7 +20,8 @@ shinyServer(function(input, output, session){
                             fillColor = topo.colors(5,alpha = NULL),
                             smoothFactor = .5,
                             layerId = LETTERS[1:6])
-    } else {
+    } 
+    else {
       proxy %>% removeShape(layerId = LETTERS[1:6])
     }
   })
@@ -33,6 +37,8 @@ shinyServer(function(input, output, session){
                                    "Afternoon (12:00-17:59)" = "Afternoon", 
                                    "Evening (18:00-23:59)" = "Evening"), 
                        server = TRUE)
+  updateSelectizeInput(session, "boro_filter", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
+  
   ### END OF FILTERS
   
   
@@ -41,6 +47,8 @@ shinyServer(function(input, output, session){
   data_filter = reactive({
     if(length(input$crimes)) {
       filtered_data = filtered_data %>% filter(.,OFNS_DESC == input$crimes)
+      dih_col <- which(dih_y2$MemeberID %in% memb)
+      
     }
     if(length(input$dow)) {
       filtered_data = filtered_data %>% filter(.,DOW == input$dow)
@@ -48,14 +56,18 @@ shinyServer(function(input, output, session){
     if(length(input$crime_time)) {
       filtered_data = filtered_data %>% filter(.,TIME_OF_DAY == input$crime_time)
     }
+    if(length(input$boro_filter)) {
+      filtered_data = filtered_data %>% filter(.,BORO_NM == input$boro_filter)
+    }
     filtered_data
   })
   ###END OF REACTIVE
   
   
-  
   ###OUTPUTTING THE INTERACTIVE DATA
+  ###WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD
   output$table <- renderDataTable({
+    #DOESN"T DEACTIVATE SEARCHING. WILL COME BACK TO ***[XX]
     options = list(searching = FALSE)
     datatable(data_filter(), rownames=TRUE) %>%
       formatStyle(input$selected,

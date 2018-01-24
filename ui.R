@@ -62,6 +62,7 @@ shinyUI(dashboardPage(
               column(4,selectizeInput("crimes",label="Pick a Crime:",choices= NULL, multiple = TRUE)),
               column(4,selectizeInput("dow",label="Pick a Day of the Week:",choices= NULL, multiple = TRUE)),
               column(4,selectizeInput("crime_time", label="Pick a Time:", choices = NULL, multiple = TRUE)),
+              column(4,selectizeInput("boro_filter", label="Pick a Borough:", choices = NULL, multiple = TRUE)),
               dataTableOutput("table")
       )
     )
