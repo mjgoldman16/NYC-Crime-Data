@@ -2,20 +2,50 @@ shinyServer(function(input, output, session){
   
   
   ### CREATION OF THE MAP
-  ##NOTE ON RAPE
-  #"To further protect victim identities, rape and sex crime offenses are not geocoded, 
-  # although the precinct of occurrence is still included for precinct-by-precinct comparisons."
+  
   output$map = renderLeaflet({
     leaflet() %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
       setView(-73.83, 40.7, 10)
+    ##START OF ADDING DATA PINPOINTS (CLUSTER)
+    # names(nyc_crimes) %>%
+    #   walk(function(df) {
+    #     l <<- l %>%
+    #       addMarkers(data=quakes.df[[df]],
+    #                  lng=~long, lat=~lat,
+    #                  label=~as.character(mag),
+    #                  popup=~as.character(mag),
+    #                  group = df,
+    #                  clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+    #                  labelOptions = labelOptions(noHide = F,
+    #                                              direction = 'auto'))
+    #   })
   })
   
+  # names(quakes.df) %>%
+  #   purrr::walk( function(df) {
+  #     l <<- l %>%
+  #       addMarkers(data=quakes.df[[df]],
+  #                  lng=~long, lat=~lat,
+  #                  label=~as.character(mag),
+  #                  popup=~as.character(mag),
+  #                  group = df,
+  #                  clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
+  #                  labelOptions = labelOptions(noHide = F,
+  #                                              direction = 'auto'))
+  #   })
+  # 
+  # l %>%
+  #   addLayersControl(
+  #     overlayGroups = names(quakes.df),
+  #     options = layersControlOptions(collapsed = FALSE)
+  #   )
+  
   # ADDING IN INTERACTIVE LAYER TOGGLE
-  observeEvent(input$borough_layer, {
+  observeEvent(input$boro_layer, {
     proxy <- leafletProxy("map")
-    if(input$borough_layer) {
-      proxy %>% addPolygons(data=borough_layer,
+    if(input$boro_layer) {
+      proxy %>% addPolygons(data=boro_layer,
                             color = topo.colors(5,alpha = NULL),
                             fillColor = topo.colors(5,alpha = NULL),
                             smoothFactor = .5,
@@ -42,7 +72,8 @@ shinyServer(function(input, output, session){
   ### END OF FILTERS
   
   
-  ##REACTIVE FILTERS
+  ###REACTIVE FILTERS
+  ##TABLE
   filtered_data = nyc_crimes
   data_filter = reactive({
     if(length(input$crimes)) {
@@ -59,6 +90,11 @@ shinyServer(function(input, output, session){
     }
     filtered_data
   })
+  ##END TABLE
+  ##MAP
+  #name it filtered_map
+  
+  ##END MAP
   ###END OF REACTIVE
   
   ###WARNINGS TO RESOLVE LIKELY TO DO WITH == VS %IN%

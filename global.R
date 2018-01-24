@@ -6,6 +6,7 @@ library(maps)
 library(DT)
 library(rgdal)
 library(ggthemes)
+library(purrr)
 
 #READ THE INITIAL DATA
 nyc_crimes = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv", drop = "V1",
@@ -13,11 +14,12 @@ nyc_crimes = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMI
 #MAKING THE OPTIONS 
 capitalizeFirst= function(x) { gsub("(?<=\\b)([a-z])", "\\U\\1", tolower(x), perl=TRUE)}
 boroughs = c("Citywide", capitalizeFirst(unique(nyc_crimes$BORO_NM)))
-type = c("Any Crime", capitalizeFirst(unique(nyc_crimes$OFNS_DESC)))
+#THIS SEEMS INEFFICIENT. WILL COME BACK *** [XX]
+map_crimes = c("Any Crime", capitalizeFirst(unique(nyc_crimes$OFNS_DESC[nyc_crimes$OFNS_DESC != "RAPE"])))
 
 
-borough_layer <- readOGR(path.expand("D:/NYC-Data-Science/Shiny-Project/Data/nybb_15d"), "nybb")
-borough_layer <- spTransform(borough_layer, CRS("+proj=longlat +datum=WGS84"))
+boro_layer <- readOGR(path.expand("D:/NYC-Data-Science/Shiny-Project/Data/nybb_15d"), "nybb")
+boro_layer <- spTransform(borough_layer, CRS("+proj=longlat +datum=WGS84"))
 
 
 ###NEW GLOBAL

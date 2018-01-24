@@ -35,13 +35,13 @@ shinyUI(dashboardPage(
                             width = 330, height = "auto",
                             
                             h2("Data Filter"),
-                            dateInput("date", label = h3("Select a Date:"),
+                            dateInput("date_map", label = "Select a Date:",
                                       format = "mm/yyyy",
                                       value = "2006-01"
                             ),
-                            # selectInput("crime", label = h3("Select Crime:"), type),
+                            selectInput("crime_map", label = h3("Select Crime:"), map_crimes),
                             # selectInput("time", label = h3("Select a Time:"), crime_time),
-                            checkboxInput("borough_layer", "Show Boroughs", value = FALSE)
+                            checkboxInput("boro_layer", "Show Boroughs", value = FALSE)
 
               )
       ),
@@ -55,7 +55,7 @@ shinyUI(dashboardPage(
       tabItem(tabName = "crime_stats",
               "test"),
       tabItem(tabName = "about",
-              "About to come"),
+              "NOTE ON RAPE: To further protect victim identities, rape and sex crime offenses are not geocoded."),
       tabItem(tabName = "me",
               "Who.... who am I?"),
       tabItem(tabName = "temp",
