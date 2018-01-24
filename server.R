@@ -1,61 +1,85 @@
 shinyServer(function(input, output, session){
   
   
-  # CREATION OF THE MAP
+  ### CREATION OF THE MAP
   output$map = renderLeaflet({
     leaflet() %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
-      setView(-73.83, 40.7, 10) %>%
-      addTiles(group = "OSM default)")
+      setView(-73.83, 40.7, 10)
   })
   
-  # CREATION OF THE CRIME FILTER FOR AN INTERACTIVE DATATABLE
-  updateSelectizeInput(session, "crimes", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
+  # ADDING IN INTERACTIVE LAYER TOGGLE
+  observeEvent(input$borough_layer, {
+    proxy <- leafletProxy("map")
+    if(input$borough_layer) {
+      proxy %>% addPolygons(data=borough_layer,
+                            color = topo.colors(5,alpha = NULL),
+                            fillColor = topo.colors(5,alpha = NULL),
+                            smoothFactor = .5,
+                            layerId = LETTERS[1:6])
+    } else {
+      proxy %>% removeShape(layerId = LETTERS[1:6])
+    }
+  })
   
-  #BUILDING OF REACTIVE FILTER
-  # crime_filter = reactive({
-  #   filtered_data = nyc_crimes %>%
-  #   if(length(input$crimes)) {
-  #     #Trying to filter on multiple different crimes seleted
-  #     filtered_data$c1 = grepl(paste(input$crimes, collapse = "|"), filtered_data$OFNS_CD)
-  #   }
-  #   else {
-  #     #if there is no length in crimes, then give all
-  #     filtered_data$c1 = TRUE 
-  #     }
-  # })
-  # 
+  ###END OF ALL THINGS MAP
+  
+  ### CREATION OF THE FILTERSS
+  updateSelectizeInput(session, "crimes", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
+  updateSelectizeInput(session, "dow", choices = unique(nyc_crimes$DOW), server = TRUE)
+  updateSelectizeInput(session, "crime_time", 
+                       choices = c("Early Morning (0:00-5:59)" = "Early Morning", 
+                                   "Morning (6:00-11:59)" = "Morning", 
+                                   "Afternoon (12:00-17:59)" = "Afternoon", 
+                                   "Evening (18:00-23:59)" = "Evening"), 
+                       server = TRUE)
+  ### END OF FILTERS
+  
+  
+  ##REACTIVE FILTERS
   filtered_data = nyc_crimes
-  crime_filter = reactive({
+  data_filter = reactive({
     if(length(input$crimes)) {
       filtered_data = filtered_data %>% filter(.,OFNS_DESC == input$crimes)
-    } else {
-      filtered_data
     }
-    
-    # if(length(input$borough)) {
-    #   filtered_data = filtered_data %>% filter(.,BORO_NM == input$borough) 
-    # } else {
-    #   filtered_data
-    # }
+    if(length(input$dow)) {
+      filtered_data = filtered_data %>% filter(.,DOW == input$dow)
+    }
+    if(length(input$crime_time)) {
+      filtered_data = filtered_data %>% filter(.,TIME_OF_DAY == input$crime_time)
+    }
+    filtered_data
   })
+  ###END OF REACTIVE
   
   
   
-  
-  #OUTPUTTING THE INTERACTIVE DATA
+  ###OUTPUTTING THE INTERACTIVE DATA
   output$table <- renderDataTable({
-    options = list(scrollX = TRUE)
-    datatable(crime_filter(), rownames=FALSE) %>%
+    options = list(searching = FALSE)
+    datatable(data_filter(), rownames=TRUE) %>%
       formatStyle(input$selected,
                   background="skyblue", fontWeight='bold')
     
   })
-  
-  output$crime <- renderPrint({ input$crime })
-  
+  ###END OF TABLE OUTPUT
 })
 
+####CODE TO REFERENCE IN CASE OF ERRORS
+
+#BUILDING OF REACTIVE FILTER
+# crime_filter = reactive({
+#   filtered_data = nyc_crimes %>%
+#   if(length(input$crimes)) {
+#     #Trying to filter on multiple different crimes seleted
+#     filtered_data$c1 = grepl(paste(input$crimes, collapse = "|"), filtered_data$OFNS_CD)
+#   }
+#   else {
+#     #if there is no length in crimes, then give all
+#     filtered_data$c1 = TRUE 
+#     }
+# })
+# 
 # shinyServer(function(input, output, session) {
 #   
 #   updateSelectizeInput(session, 'country', choices = unique(data_test$Country), server = TRUE)
@@ -103,3 +127,5 @@ shinyServer(function(input, output, session){
 #        border = "white")
 #   output$value <- renderPrint({ input$select })
 # })
+
+#### NEW SERVER

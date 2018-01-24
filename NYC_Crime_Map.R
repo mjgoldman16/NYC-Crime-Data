@@ -99,12 +99,19 @@ nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
 nyc_crimes = nyc_crimes[is.na(TIME)& CMPLNT_FR_TM=="24:00:00",TIME:=0]
 nyc_crimes = setorder(nyc_crimes,DATE,TIME)
 
+
+nyc_crimes[,c("TIME_OF_DAY"):= ifelse(TIME<"05:59:59", "Early Morning",
+                                      ifelse(TIME < "11:59:59", "Morning",
+                                             ifelse(TIME < "17:59:59", "Afternoon",
+                                                    "Evening")))]
+
 #Include the day of the week for the crimes
 nyc_crimes[,c("DOW"):=c(weekdays(DATE))]
 
+
 #Delete columns that are combined together or that were copied
 nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM") := NULL]
-nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "DOW","KY_CD", "OFNS_DESC", "PD_CD", "PD_DESC", 
+nyc_crimes = setcolorder(nyc_crimes, c("DATE", "TIME", "TIME_OF_DAY", "DOW","KY_CD", "OFNS_DESC", "PD_CD", "PD_DESC", 
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
 

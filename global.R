@@ -1,12 +1,23 @@
 library(shiny)
 library(shinydashboard)
+library(data.table)
 library(leaflet)
 library(maps)
 library(DT)
+library(rgdal)
+library(ggthemes)
 
-nyc_crimes = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv",
-                            header=TRUE) 
+#READ THE INITIAL DATA
+nyc_crimes = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv", drop = "V1",
+                   header=TRUE) 
+#MAKING THE OPTIONS 
 capitalizeFirst= function(x) { gsub("(?<=\\b)([a-z])", "\\U\\1", tolower(x), perl=TRUE)}
 boroughs = c("Citywide", capitalizeFirst(unique(nyc_crimes$BORO_NM)))
 type = c("Any Crime", capitalizeFirst(unique(nyc_crimes$OFNS_DESC)))
-crime_time = c("Any Time","Early Morning (0:00-5:59)", "Morning (6:00-11:59)", "Afternoon (12:00-17:59)", "Evening (18:00-23:59)")
+
+
+borough_layer <- readOGR(path.expand("D:/NYC-Data-Science/Shiny-Project/Data/nybb_15d"), "nybb")
+borough_layer <- spTransform(borough_layer, CRS("+proj=longlat +datum=WGS84"))
+
+
+###NEW GLOBAL
