@@ -47,22 +47,27 @@ shinyServer(function(input, output, session){
   data_filter = reactive({
     if(length(input$crimes)) {
       filtered_data = filtered_data %>% filter(.,OFNS_DESC == input$crimes)
-      dih_col <- which(dih_y2$MemeberID %in% memb)
-      
     }
     if(length(input$dow)) {
-      filtered_data = filtered_data %>% filter(.,DOW == input$dow)
+      filtered_data = filtered_data %>% filter(.,DOW %in% input$dow)
     }
     if(length(input$crime_time)) {
-      filtered_data = filtered_data %>% filter(.,TIME_OF_DAY == input$crime_time)
+      filtered_data = filtered_data %>% filter(.,TIME_OF_DAY %in% input$crime_time)
     }
     if(length(input$boro_filter)) {
-      filtered_data = filtered_data %>% filter(.,BORO_NM == input$boro_filter)
+      filtered_data = filtered_data %>% filter(.,BORO_NM %in% input$boro_filter)
     }
     filtered_data
   })
   ###END OF REACTIVE
   
+  ###WARNINGS TO RESOLVE LIKELY TO DO WITH == VS %IN%
+  # Warning in BORO_NM == input$boro_filter :
+  #   longer object length is not a multiple of shorter object length
+  # Warning in TIME_OF_DAY == input$crime_time :
+  #   longer object length is not a multiple of shorter object length
+  # Warning in DOW == input$dow :
+  #   longer object length is not a multiple of shorter object length
   
   ###OUTPUTTING THE INTERACTIVE DATA
   ###WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD
