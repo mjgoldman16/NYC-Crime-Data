@@ -3,12 +3,17 @@ shinyServer(function(input, output, session){
   
   ### CREATION OF THE MAP
   
+  ##WHEN I SELECT A NEW OUTPUT IT COVERS UP THE LAYERS, ASK TA ABOUT THIS
   output$map = renderLeaflet({
     leaflet(map_filter()) %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
       setView(-73.83, 40.7, 10) %>%
       addMarkers(~Longitude, ~Latitude,
-                   clusterOptions = markerClusterOptions())
+                   clusterOptions = markerClusterOptions(), 
+                 popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
+                               "Additional Details:", map_filter()$PD_DESC, "<br>",
+                               "Date Occured:", map_filter()$DATE, "<br>",
+                               "Time Occured:", map_filter()$TIME, "<br>"))
   })
  
   
@@ -22,14 +27,14 @@ shinyServer(function(input, output, session){
                             smoothFactor = .5,
                             layerId = LETTERS[1:6])
     } 
-    else {
+    else {5
       proxy %>% removeShape(layerId = LETTERS[1:6])
     }
   })
   
   ###END OF ALL THINGS MAP
   
-  ### CREATION OF THE FILTERSS
+  ### CREATION OF THE FILTERS
   updateSelectizeInput(session, "crimes", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
   updateSelectizeInput(session, "dow", choices = unique(nyc_crimes$DOW), server = TRUE)
   updateSelectizeInput(session, "crime_time", 
@@ -39,6 +44,9 @@ shinyServer(function(input, output, session){
                                    "Evening (18:00-23:59)" = "Evening"), 
                        server = TRUE)
   updateSelectizeInput(session, "boro_filter", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
+  
+  #catch the update selectizeinput
+  updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
   
   ### END OF FILTERS
   
@@ -64,15 +72,22 @@ shinyServer(function(input, output, session){
   ##END TABLE
   
   ##MAP REACTIVE
-  filtered_map = nyc_crimes
+  filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
   map_filter = reactive({
-    filtered_year = as.numeric(substr(input$date_map,1,4))
-    filtered_month = as.numeric(substr(input$date_map,6,7))
-    filtered_map = filtered_map %>% filter(.,YEAR == filtered_year)
-    filtered_map = filtered_map %>% filter(.,MONTH == filtered_month)
-    print(substr(input$date_map,6,7))
-    print(substr(input$date_map,1,4))
-    filtered_map = filtered_map %>% filter(.,BORO_NM == input$boro_map)
+    #Setting variables to make cleaner code
+    # filtered_year = as.numeric(substr(input$date_map,1,4))
+    # filtered_month = as.numeric(substr(input$date_map,6,7))
+    
+    #Filters for the map
+    # filtered_map = filtered_map %>% filter(.,YEAR == filtered_year)
+    # filtered_map = filtered_map %>% filter(.,MONTH == filtered_month)
+    filtered_map = filtered_map %>% filter(.,MONTH_YEAR == input$date_map)
+    if(input$boro_map != "ANY BOROUGH") {
+      filtered_map = filtered_map %>% filter(.,BORO_NM == input$boro_map)
+    }
+    if(input$crime_map != "ANY CRIME") {
+      filtered_map = filtered_map %>% filter(.,OFNS_DESC == input$crime_map)
+    }
     return(filtered_map)
   })
   #name it filtered_map

@@ -110,12 +110,14 @@ nyc_crimes[,c("TIME_OF_DAY"):= ifelse(TIME<"05:59:59", "Early Morning",
 #Include the day of the week for the crimes
 nyc_crimes[,c("DOW"):=c(weekdays(DATE))]
 nyc_crimes[,c("YEAR"):=c(year(DATE))]
-nyc_crimes[,c("MONTH"):=c(month(DATE))]
+nyc_crimes[,c("MONTH"):=c(month.abb[(month(DATE))])]
+nyc_crimes[,c("MONTH_YEAR"):=paste(MONTH,YEAR)]
+
 
 
 #Delete columns that are combined together or that were copied
 nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM", "KY_CD", "PD_CD") := NULL]
-nyc_crimes = setcolorder(nyc_crimes, c("DATE", "YEAR", "MONTH", "TIME", "TIME_OF_DAY", "DOW", "OFNS_DESC", "PD_DESC", 
+nyc_crimes = setcolorder(nyc_crimes, c("DATE", "YEAR", "MONTH", "MONTH_YEAR", "TIME", "TIME_OF_DAY", "DOW", "OFNS_DESC", "PD_DESC", 
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
 

@@ -10,18 +10,6 @@ shinyUI(dashboardPage(
       menuItem("Crime Statistics", tabName = "crime_stats", icon = icon("user")),
       menuItem("About Me", tabName = "me", icon = icon("bath")),
       menuItem("TEMP", tabName = "temp", icon = icon("warning"))
-      #will likely shift these over to main bodies since it will make more sense when comparing each other
-      #will have a select for maps, will have a checkbox group for stats
-      # selectizeInput("location",
-      #                "Select a Borough:",
-      #                boroughs),
-      # selectizeInput("type",
-      #                "Select a Type of Crime:",
-      #                type),
-      # selectizeInput("time",
-      #                "Select a Time the Crime Occurred",
-      #                crime_time),
-      # dateInput("date", label = h3("Date input"), value = "2014-01")
     )
   ),
   
@@ -31,16 +19,17 @@ shinyUI(dashboardPage(
       tabItem(tabName = "map",
               leafletOutput("map", height = "900"),
               absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
-                            draggable = TRUE, top = 60, left = "auto", right = 20, bottom = "auto",
-                            width = 330, height = "auto",
+                            draggable = TRUE, top = 160, right = "auto", bottom = "auto",
+                            width = 330, height = "auto", style = "opacity: 0.92; background: #f7f6fc;",
                             
                             h2("Data Filter"),
-                            dateInput("date_map", label = "Select a Date:", format = "mm/yyyy", value = "2006-01"),
+                            
+                            #original filter
+                            #dateInput("date_map", label = "Select a Date:", format = "mm/yyyy", value = "2006-01"),
+                            selectizeInput("date_map", label = "Select a Month and Year:", choices = NULL, multiple = FALSE),
                             selectInput("crime_map", label = h3("Select Crime:"), map_crimes),
-                            selectInput("boro_map", label = h3("Select a Borough:"), unique(nyc_crimes$BORO_NM)),
-                            # selectInput("time", label = h3("Select a Time:"), crime_time),
+                            selectInput("boro_map", label = h3("Select a Borough:"), boro_list),
                             checkboxInput("boro_layer", "Show Boroughs", value = FALSE)
-
               )
       ),
       tabItem(tabName = "boro_stats",
