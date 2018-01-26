@@ -6,6 +6,7 @@ library(maps)
 library(DT)
 library(rgdal)
 library(ggthemes)
+library(plotly)
 
 #READ THE INITIAL DATA
 nyc_crimes = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv", drop = "V1",

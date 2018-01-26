@@ -3,7 +3,20 @@ library(dplyr)
 library(chron)
 #D[using i, calculate j, grouped by k]
 
-###TO DO FILTER SO ALL DATA IS PROPER CASE
+###TO DO:
+#ADD IN BORO AND CRIME GRAPHS
+#FIX MAP SO LAYER DOESN'T GET OVERWRITTEN
+#FILTER SO ALL DATA IS PROPER CASE/NOT A BROKEN CAPSLOCK.(USE REGULAR EXPRESSIONS TO MAKE SURE SPACES ARE ALL SET)
+#*ADD ABOUT THE DATA/ABOUT ME PAGE
+
+###STRETCH GOALS:
+#reverse look up 
+#Alter map color to something nicer
+#make it so boro and crime stats are just one tab with an absolute panel on top to pick which one you want/what to focus on
+#
+#
+#
+
 
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
@@ -113,6 +126,8 @@ nyc_crimes[,c("YEAR"):=c(year(DATE))]
 nyc_crimes[,c("MONTH"):=c(month.abb[(month(DATE))])]
 nyc_crimes[,c("MONTH_YEAR"):=paste(MONTH,YEAR)]
 
+#Dropping the data with no borough label (only ~250 observations, 7 of which have lat/long data, so won't affect mapping much)
+nyc_crimes = nyc_crimes[!(BORO_NM=="")]
 
 
 #Delete columns that are combined together or that were copied

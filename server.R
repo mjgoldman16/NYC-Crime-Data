@@ -1,7 +1,7 @@
 shinyServer(function(input, output, session){
   
   
-  ### CREATION OF THE MAP
+  ### DRAWING OF MAP
   
   ##WHEN I SELECT A NEW OUTPUT IT COVERS UP THE LAYERS, ASK TA ABOUT THIS
   output$map = renderLeaflet({
@@ -12,8 +12,8 @@ shinyServer(function(input, output, session){
                    clusterOptions = markerClusterOptions(), 
                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
                                "Additional Details:", map_filter()$PD_DESC, "<br>",
-                               "Date Occured:", map_filter()$DATE, "<br>",
-                               "Time Occured:", map_filter()$TIME, "<br>"))
+                               "Date Occurred:", map_filter()$DATE, "<br>",
+                               "Time Occurred:", map_filter()$TIME, "<br>"))
   })
  
   
@@ -32,9 +32,10 @@ shinyServer(function(input, output, session){
     }
   })
   
-  ###END OF ALL THINGS MAP
+  ###END OF ALL MAP DRAWING
   
-  ### CREATION OF THE FILTERS
+  ### UPDATING SELECTIZE INPUTS
+  ## INPUT FILTERS FOR THE TABLE
   updateSelectizeInput(session, "crimes", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
   updateSelectizeInput(session, "dow", choices = unique(nyc_crimes$DOW), server = TRUE)
   updateSelectizeInput(session, "crime_time", 
@@ -43,11 +44,20 @@ shinyServer(function(input, output, session){
                                    "Afternoon (12:00-17:59)" = "Afternoon", 
                                    "Evening (18:00-23:59)" = "Evening"), 
                        server = TRUE)
+  ##END OF FILTERS FOR THE TABLE
+  
+  ##START OF FILTERS FOR THE MAP
   updateSelectizeInput(session, "boro_filter", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
-  
-  #catch the update selectizeinput
   updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
+  ##END OF FILTERS FOR THE MAP
   
+  ##START OF FILTER FOR THE BORO STATS
+  updateSelectizeInput(session, "b_boro_stats", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
+  ##END OF FILTER FOR BORO STATS
+  
+  ##START OF FILTER FOR THE CRIME STATS
+  updateSelectizeInput(session, "c_crime_stats", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
+  ##END OF CRIME FILTER STATS
   ### END OF FILTERS
   
   
@@ -74,13 +84,6 @@ shinyServer(function(input, output, session){
   ##MAP REACTIVE
   filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
   map_filter = reactive({
-    #Setting variables to make cleaner code
-    # filtered_year = as.numeric(substr(input$date_map,1,4))
-    # filtered_month = as.numeric(substr(input$date_map,6,7))
-    
-    #Filters for the map
-    # filtered_map = filtered_map %>% filter(.,YEAR == filtered_year)
-    # filtered_map = filtered_map %>% filter(.,MONTH == filtered_month)
     filtered_map = filtered_map %>% filter(.,MONTH_YEAR == input$date_map)
     if(input$boro_map != "ANY BOROUGH") {
       filtered_map = filtered_map %>% filter(.,BORO_NM == input$boro_map)
@@ -90,15 +93,61 @@ shinyServer(function(input, output, session){
     }
     return(filtered_map)
   })
-  #name it filtered_map
-  
   ##END MAP
+  
+  #realized these reactives might not be needed, since can be done in render
+  ##BORO STATS
+  # filtered_boro_crimes = nyc_crimes
+  # boro_crimes_filter = reactive({
+  #   filtered_boro_crimes = filtered_boro_crimes %>% filter(.,BORO_NM == input$b_boro_stats)
+  #   filtered_boro_crimes = filtered_boro_crimes %>% filter(.,OFNS_DESC %in% input$b_crime_stats)
+  #   return(filtered_boro_crimes)
+  # })
+  ##END BORO STATS
+  
+  ##CRIME STATS
+  # filtered_crime_boros = nyc_crimes
+  # crime_boros_filter = reactive({
+  #   filtered_crime_boros = filtered_crime_boros %>% filter(.,BORO_NM == input$b_boro_stats)
+  #   filtered_crime_boros = filtered_crime_boros %>% filter(.,OFNS_DESC %in% input$b_crime_stats)
+  #   return(filtered_crime_boros)
+  # })
+
+  ##END OF CRIME STATS
   ###END OF REACTIVE
   
+  ###RENDERING PLOTLY GRAPHS
+  ##BORO TAB
+  #YEAR TO YEAR
+  filtered_boro_crimes = nyc_crimes
+  output$boro_year_plot = renderPlot({
+    filtered_boro_crimes = filtered_boro_crimes %>% filter(.,BORO_NM == input$b_boro_stats)
+    filtered_boro_crimes = filtered_boro_crimes %>% filter(.,OFNS_DESC %in% input$b_crime_stats)
+    filtered_boro_crimes = filtered_boro_crimes %>% 
+      group_by(., OFNS_DESC, YEAR) %>%
+      summarize(count = n())
+    print(filtered_boro_crimes)
+    
+    ggplot(filtered_boro_crimes) + geom_line(aes(x = YEAR, y = count, color = OFNS_DESC), stat = "identity")
+  })
   
   
-  ###OUTPUTTING THE INTERACTIVE DATA
-  ###WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD
+  
+  ##END OF BORO TAB
+  
+  ##CRIME TAB
+  
+  
+  
+  
+  
+  
+  
+  ##END OF CRIME TAB
+    ###END OF PLOTLY GRAPHS
+  
+  ###OUTPUTTING THE INTERACTIVE TABLE
+  ###[XX]*** WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD
   output$table <- renderDataTable({
     #DOESN"T DEACTIVATE SEARCHING. WILL COME BACK TO ***[XX]
     options = list(searching = FALSE)
