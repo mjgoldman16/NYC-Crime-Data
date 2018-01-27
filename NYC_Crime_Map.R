@@ -1,15 +1,16 @@
 library(data.table)
 library(dplyr)
 library(chron)
+library(tidyr)
 #D[using i, calculate j, grouped by k]
 
 ###TO DO:
 #ADD IN BORO AND CRIME GRAPHS
-#FIX MAP SO LAYER DOESN'T GET OVERWRITTEN
 #FILTER SO ALL DATA IS PROPER CASE/NOT A BROKEN CAPSLOCK.(USE REGULAR EXPRESSIONS TO MAKE SURE SPACES ARE ALL SET)
 #*ADD ABOUT THE DATA/ABOUT ME PAGE
-#ADD A ROUNDED HOUR COLUMN
 #HEATMAP OF CRIMES
+#DON'T SHOW THE ADDED COLUMNS IN THE DT TABLE
+#
 
 ###STRETCH GOALS:
 #reverse look up 
@@ -110,6 +111,7 @@ nyc_crimes = nyc_crimes[DATE>"2005-12-31" & !(is.na(DATE))]
 #[xx]*** THIS SEEMS REDUNDANT. WILL ASK ABOUT IT
 nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
                          format="%H:%M:%S")
+nyc_crimes$HOUR = as.numeric(substr(nyc_crimes$TIME,1,2))
 
 #Some data is marked as midnight incorrectly (24:00:00). Convert this to be midnight the same day (00:00:00)
 #rather than out of bounds
@@ -124,25 +126,37 @@ nyc_crimes[,c("TIME_OF_DAY"):= ifelse(TIME<"05:59:59", "Early Morning",
 
 #Include the day of the week for the crimes
 nyc_crimes[,c("DOW"):=c(weekdays(DATE))]
+nyc_crimes$DOW = factor(nyc_crimes$DOW, levels = c("Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
 nyc_crimes[,c("YEAR"):=c(year(DATE))]
-nyc_crimes[,c("MONTH"):=c(month.abb[(month(DATE))])]
+nyc_crimes[,c("MONTH"):=c(month(DATE))]
+nyc_crimes$MONTH = factor(month.name[nyc_crimes$MONTH], levels=month.name[1:12])
 nyc_crimes[,c("MONTH_YEAR"):=paste(MONTH,YEAR)]
-
+# nyc_crimes$MONTH = levels("January", "February",)
 #Dropping the data with no borough label (only ~250 observations, 7 of which have lat/long data, so won't affect mapping much)
 nyc_crimes = nyc_crimes[!(BORO_NM=="")]
 
 
 #Delete columns that are combined together or that were copied
 nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM", "KY_CD", "PD_CD") := NULL]
-nyc_crimes = setcolorder(nyc_crimes, c("DATE", "YEAR", "MONTH", "MONTH_YEAR", "TIME", "TIME_OF_DAY", "DOW", "OFNS_DESC", "PD_DESC", 
+nyc_crimes = setcolorder(nyc_crimes, c("DATE", "YEAR", "MONTH", "MONTH_YEAR", "TIME", "HOUR", "TIME_OF_DAY", "DOW", "OFNS_DESC", "PD_DESC", 
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
+
+#ADDING IN POPULATION DATA
+pop_data = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC borough population.csv",
+                            header=TRUE)
+pop_data = pop_data[,r:=NULL]
+pop_data = gather(pop_data, key="YEAR",value="POPULATION", 2:13)
+pop_data$YEAR = as.numeric(pop_data$YEAR)
+pop_data$POPULATION = as.numeric(pop_data$POPULATION)
+nyc_crimes = left_join(nyc_crimes,pop_data,by = c("YEAR","BORO_NM"))
 
 
 write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
+# saveRDS(nyc_crimes, )
+#save to rds file 
 
 # View(nyc_crimes)
 
 #still not an exact match to the summary data listed on the website:
 #http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls
-nyc_crimes[,.N,by=.(OFNS_DESC,year(DATE))]
 

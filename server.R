@@ -3,34 +3,76 @@ shinyServer(function(input, output, session){
   
   ### DRAWING OF MAP
   
-  ##WHEN I SELECT A NEW OUTPUT IT COVERS UP THE LAYERS, ASK TA ABOUT THIS
+  ##[XX]***MAP LAG INTRODUCED BY FIXING LAYER PROBLEM (MAINLY FROM DRAWING). ALSO AUTORESETS VIEW. WILL ASK TA'S ABOUT OPTIMIZING
+  ##LIKELY A WAY TO KEEP THE PREVIOUS LAT/LONG ON THE MAP SO IT JUST DRAWS IT RATHER THAN SHIFTING
+  
   output$map = renderLeaflet({
-    leaflet(map_filter()) %>%
+    leaflet() %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
-      setView(-73.83, 40.7, 10) %>%
+      setView(-73.945242, 40.710610, 11)
+  })
+
+  
+  ###BROKEN [XX]*** 
+  filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
+  observeEvent(c(input$boro_layer, input$date_map, input$crime_map, input$boro_map), {
+    if(length(input$date_map)) {
+      filtered_map = filtered_map %>% filter(.,MONTH_YEAR == input$date_map) %>% na.omit()
+    }
+    if(input$boro_map != "ANY BOROUGH") {
+      filtered_map = filtered_map %>% filter(.,BORO_NM == input$boro_map)
+    }
+    if(input$crime_map != "ANY CRIME") {
+      filtered_map = filtered_map %>% filter(.,OFNS_DESC == input$crime_map)
+    }
+
+    print(filtered_map)
+
+    leafletProxy("map", data = filtered_map) %>% 
+      clearMarkerClusters() %>%
       addMarkers(~Longitude, ~Latitude,
-                   clusterOptions = markerClusterOptions(), 
+                 clusterOptions = markerClusterOptions(),
                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
                                "Additional Details:", map_filter()$PD_DESC, "<br>",
                                "Date Occurred:", map_filter()$DATE, "<br>",
-                               "Time Occurred:", map_filter()$TIME, "<br>"))
+                               "Time Occurred:", map_filter()$TIME, "<br>")) %>%
+                               {ifelse(input$boro_layer, leafletProxy("map") %>% addPolygons(data=boro_layer,
+                                                               color = topo.colors(5,alpha = NULL),
+                                                               fillColor = topo.colors(5,alpha = NULL),
+                                                               smoothFactor = .5,
+                                                               layerId = LETTERS[1:6]),leafletProxy("map") %>% removeShape(layerId = LETTERS[1:6]))}
   })
- 
+      # if(input$boro_layer) {
+      #   output$map = renderLeaflet({
+      #     leaflet(map_filter()) %>%
+      #       addProviderTiles("Esri.WorldStreetMap") %>%
+      #       addMarkers(~Longitude, ~Latitude,
+      #                  clusterOptions = markerClusterOptions(), 
+      #                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
+      #                                "Additional Details:", map_filter()$PD_DESC, "<br>",
+      #                                "Date Occurred:", map_filter()$DATE, "<br>",
+      #                                "Time Occurred:", map_filter()$TIME, "<br>")) %>%
+    #       addPolygons(data=boro_layer,
+    #                   color = topo.colors(5,alpha = NULL),
+    #                   fillColor = topo.colors(5,alpha = NULL),
+    #                   smoothFactor = .5,
+    #                   layerId = LETTERS[1:6])
+    #   })
+    # } else {
+    #   output$map = renderLeaflet({
+    #     leaflet(map_filter()) %>%
+    #       addProviderTiles("Esri.WorldStreetMap") %>%
+    #       #since we don't have any points, it goes completely zoomed out. wnat to find a way to 
+    #       addMarkers(~Longitude, ~Latitude,
+    #                  clusterOptions = markerClusterOptions(), 
+    #                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
+    #                                "Additional Details:", map_filter()$PD_DESC, "<br>",
+    #                                "Date Occurred:", map_filter()$DATE, "<br>",
+    #                                "Time Occurred:", map_filter()$TIME, "<br>")) %>%
+    #       removeShape(layerId = LETTERS[1:6])
+    #   })
+    # }
   
-  # ADDING IN INTERACTIVE LAYER TOGGLE
-  observeEvent(input$boro_layer, {
-    proxy <- leafletProxy("map")
-    if(input$boro_layer) {
-      proxy %>% addPolygons(data=boro_layer,
-                            color = topo.colors(5,alpha = NULL),
-                            fillColor = topo.colors(5,alpha = NULL),
-                            smoothFactor = .5,
-                            layerId = LETTERS[1:6])
-    } 
-    else {5
-      proxy %>% removeShape(layerId = LETTERS[1:6])
-    }
-  })
   
   ###END OF ALL MAP DRAWING
   
@@ -48,7 +90,7 @@ shinyServer(function(input, output, session){
   
   ##START OF FILTERS FOR THE MAP
   updateSelectizeInput(session, "boro_filter", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
-  updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
+  # updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
   ##END OF FILTERS FOR THE MAP
   
   ##START OF FILTER FOR THE BORO STATS
@@ -95,58 +137,119 @@ shinyServer(function(input, output, session){
   })
   ##END MAP
   
-  #realized these reactives might not be needed, since can be done in render
-  ##BORO STATS
-  # filtered_boro_crimes = nyc_crimes
-  # boro_crimes_filter = reactive({
-  #   filtered_boro_crimes = filtered_boro_crimes %>% filter(.,BORO_NM == input$b_boro_stats)
-  #   filtered_boro_crimes = filtered_boro_crimes %>% filter(.,OFNS_DESC %in% input$b_crime_stats)
-  #   return(filtered_boro_crimes)
-  # })
-  ##END BORO STATS
+  ##START OF BORO GRAPH FILTERS
+  filtered_boro_crimes = nyc_crimes
+  grouped_boro_crimes = reactive({
+    filtered_boro_crimes = filtered_boro_crimes %>% filter(.,BORO_NM == input$b_boro_stats)
+    filtered_boro_crimes = filtered_boro_crimes %>% filter(.,OFNS_DESC %in% input$b_crime_stats) %>%
+      group_by(., OFNS_DESC)
+    return(filtered_boro_crimes)
+  })
+  ##END OF BORO GRAPH FILTERS
   
-  ##CRIME STATS
-  # filtered_crime_boros = nyc_crimes
-  # crime_boros_filter = reactive({
-  #   filtered_crime_boros = filtered_crime_boros %>% filter(.,BORO_NM == input$b_boro_stats)
-  #   filtered_crime_boros = filtered_crime_boros %>% filter(.,OFNS_DESC %in% input$b_crime_stats)
-  #   return(filtered_crime_boros)
-  # })
-
-  ##END OF CRIME STATS
+  ##START OF CRIME GRAPH FILTERS
+  filtered_crime_boros = nyc_crimes
+  grouped_crime_boros = reactive({
+    filtered_crime_boros = filtered_crime_boros %>% filter(., OFNS_DESC == input$c_crime_stats)
+  return(filtered_crime_boros)
+  })
+  ##END OF CRIME GRAPH FILTERS
   ###END OF REACTIVE
   
   ###RENDERING PLOTLY GRAPHS
   ##BORO TAB
   #YEAR TO YEAR
-  filtered_boro_crimes = nyc_crimes
   output$boro_year_plot = renderPlot({
-    filtered_boro_crimes = filtered_boro_crimes %>% filter(.,BORO_NM == input$b_boro_stats)
-    filtered_boro_crimes = filtered_boro_crimes %>% filter(.,OFNS_DESC %in% input$b_crime_stats)
-    filtered_boro_crimes = filtered_boro_crimes %>% 
+    #keep in absolute terms to see general crime trends
+    filtered_boro_crimes = grouped_boro_crimes() %>%
       group_by(., OFNS_DESC, YEAR) %>%
       summarize(count = n())
-    print(filtered_boro_crimes)
-    
-    ggplot(filtered_boro_crimes) + geom_line(aes(x = YEAR, y = count, color = OFNS_DESC), stat = "identity")
+    ggplot(filtered_boro_crimes) + geom_line(aes(x = YEAR, y = count, color = OFNS_DESC, group = OFNS_DESC), stat = "identity")
+  })
+
+  #MONTH TO MONTH
+  output$boro_month_plot = renderPlot({
+    filtered_boro_crimes = grouped_boro_crimes() %>% 
+      #This should be in percentage of that amount of crime
+      mutate(count_total = n()) %>%
+      group_by(., OFNS_DESC, MONTH, count_total) %>%
+      mutate(ratio = n()/count_total) %>%
+      distinct()
+    filtered_boro_crimes$MONTH = factor(filtered_boro_crimes$MONTH, levels=month.name[1:12])
+    ggplot(filtered_boro_crimes) + geom_line(aes(x = MONTH, y = ratio, color = OFNS_DESC, group = OFNS_DESC), stat = "identity")
+  })
+  
+  # #DOW
+  output$boro_DOW_plot = renderPlot({
+    filtered_boro_crimes = grouped_boro_crimes() %>%
+      #This should be in percentage of that amount of crime
+      mutate(count_total = n()) %>%
+      group_by(., OFNS_DESC, DOW, count_total) %>%
+      mutate(ratio = n()/count_total) %>%
+      distinct()
+    filtered_boro_crimes$DOW = factor(filtered_boro_crimes$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+    ggplot(filtered_boro_crimes) + geom_line(aes(x = DOW, y = ratio, color = OFNS_DESC, group = OFNS_DESC), stat = "identity")
+  })
+
+  # #TIME AFTER TIME
+  output$boro_time_plot = renderPlot({
+    filtered_boro_crimes = grouped_boro_crimes() %>%
+      #This should be in percentage of that amount of crime
+      mutate(count_total = n()) %>%
+      group_by(., OFNS_DESC, HOUR, count_total) %>%
+      mutate(ratio = n()/count_total) %>%
+      distinct()
+    ggplot(filtered_boro_crimes) + geom_line(aes(x = HOUR, y = ratio, color = OFNS_DESC, group = OFNS_DESC), stat = "identity")
+  })
+  ##END OF BORO TAB
+  
+  ##CRIME TAB
+  #YEAR TO YEAR
+  output$crime_year_plot = renderPlot({
+    #keep in absolute terms to see general crime trends
+    filtered_crime_boros = grouped_crime_boros() %>%
+      group_by(., BORO_NM, YEAR, POPULATION) %>%
+      summarize(count = n())
+    ggplot(filtered_crime_boros) + geom_line(aes(x = YEAR, y = (count/POPULATION)*10000, color = BORO_NM, group = BORO_NM), stat = "identity")
+  })
+  
+  #MONTH TO MONTH
+  output$crime_month_plot = renderPlot({
+    filtered_crime_boros = grouped_crime_boros() %>%
+      mutate(avg_pop = mean(POPULATION)) %>%
+      group_by(., BORO_NM, MONTH, avg_pop) %>%
+      mutate(crime_per_10k = n()*10000/avg_pop) %>%
+      distinct()
+    filtered_crime_boros$MONTH = factor(filtered_crime_boros$MONTH, levels=month.name[1:12])
+    ggplot(filtered_crime_boros) + geom_line(aes(x = MONTH, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
+  })
+
+  #DOW
+  output$crime_DOW_plot = renderPlot({
+    filtered_crime_boros = grouped_crime_boros() %>%
+      mutate(avg_pop = mean(POPULATION)) %>%
+      group_by(., BORO_NM, DOW, avg_pop) %>%
+      mutate(crime_per_10k = n()*10000/avg_pop) %>%
+      distinct()
+    filtered_crime_boros$DOW = factor(filtered_crime_boros$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+    ggplot(filtered_crime_boros) + geom_line(aes(x = DOW, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
+  })
+  
+  #TIME AFTER TIME
+  output$crime_time_plot = renderPlot({
+    filtered_crime_boros = grouped_crime_boros() %>%
+      mutate(avg_pop = mean(POPULATION)) %>%
+      group_by(., BORO_NM, HOUR, avg_pop) %>%
+      mutate(crime_per_10k = n()*10000/avg_pop) %>%
+      distinct()
+    ggplot(filtered_crime_boros) + geom_line(aes(x = HOUR, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
   })
   
   
   
   
-  
-  ##END OF BORO TAB
-  
-  ##CRIME TAB
-  
-  
-  
-  
-  
-  
-  
   ##END OF CRIME TAB
-    ###END OF PLOTLY GRAPHS
+  ###END OF PLOTLY GRAPHS
   
   ###OUTPUTTING THE INTERACTIVE TABLE
   ###[XX]*** WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD

@@ -7,8 +7,11 @@ library(DT)
 library(rgdal)
 library(ggthemes)
 library(plotly)
+library(lubridate)
+library(dplyr)
 
 #READ THE INITIAL DATA
+#readRDS
 nyc_crimes = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv", drop = "V1",
                    header=TRUE) 
 #MAKING THE OPTIONS 

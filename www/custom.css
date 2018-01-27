@@ -1,0 +1,11 @@
+/* navbar (rest of the header) */
+.skin-blue .main-header .navbar {
+  position: fixed; 
+  overflow: visible;
+}        
+
+/* main sidebar */
+.skin-blue .main-sidebar {
+  position: fixed; 
+  overflow: visible;
+}
