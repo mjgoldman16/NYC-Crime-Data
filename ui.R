@@ -9,8 +9,8 @@ shinyUI(dashboardPage(
                menuItem("Cluster-map", tabName = "map", icon = icon("map")),
                menuItem("Heat-map", tabName = "heatmap", icon = icon("fire"))),
       menuItem("Statistics", tabName = "stats_dropdown", icon = icon("bars"),
-        menuItem("Borough Statistics", tabName = "boro_stats", icon = icon("bar-chart")),
-        menuItem("Crime Statistics", tabName = "crime_stats", icon = icon("user"))),
+               menuItem("Borough Statistics", tabName = "boro_stats", icon = icon("bar-chart")),
+               menuItem("Crime Statistics", tabName = "crime_stats", icon = icon("user"))),
       menuItem("View the Data", tabName = "table", icon = icon("warning"))
     )
   ),
@@ -25,12 +25,12 @@ shinyUI(dashboardPage(
       tabItem(tabName = "about",
               "NOTE ON RAPE: To further protect victim identities, rape and sex crime offenses are not geocoded."),
       tabItem(tabName = "map",
-              leafletOutput("map", height = "900"),
+              leafletOutput("map", height = "900", width="100%"),
               absolutePanel(id = "controls", class = "panel panel-default",
                             draggable = TRUE, top = 160, right = "auto", bottom = "auto",
                             width = 330, height = "auto", style = "padding: 8px; opacity: 0.92; background: #f7f6fc;",
                             h2("Data Filter"),
-                            selectInput("date_map", label = "Select a Month and Year:", choices = unique(nyc_crimes$MONTH_YEAR)),
+                            selectizeInput("date_map", label = "Select a Month and Year:", choices = NULL, multiple = FALSE),
                             selectInput("crime_map", label = h3("Select Crime:"), map_crimes),
                             selectInput("boro_map", label = h3("Select a Borough:"), boro_list),
                             checkboxInput("boro_layer", "Show Boroughs", value = FALSE)
@@ -44,8 +44,8 @@ shinyUI(dashboardPage(
                             style = "padding: 8px; padding-left: 240px; border-bottom: 1px solid #CCC; background: #FFFFEE;"),
               h1("_"), #***[XX] used to pad the text/graphs underneath the absolute panel. Will fix later
               box(checkboxGroupInput("b_crime_stats", label="Pick the Crimes you would like to graph:", 
-                                 unique(nyc_crimes$OFNS_DESC),
-                                 selected = NULL)),
+                                     unique(nyc_crimes$OFNS_DESC),
+                                     selected = NULL)),
               ##[xx]***
               #actionButton("boro_action", label = "GO!"),
               box(plotOutput("boro_year_plot")),

@@ -11,10 +11,34 @@ shinyServer(function(input, output, session){
       addProviderTiles("Esri.WorldStreetMap") %>%
       setView(-73.945242, 40.710610, 11)
   })
-
   
-  ###BROKEN [XX]*** 
+  ##DRAW THE MAP  
   filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
+  
+  getColor = function(df) {
+    unname(sapply(df$OFNS_DESC, function(offense) {
+      if(offense == "MURDER & NON-NEGL. MANSLAUGHTER") {
+        "red"
+      } else if(offense == "RAPE") {
+        "orange" 
+      } else if(offense == "FELONY ASSAULT") {
+        "yellow"
+      } else if(offense == "ROBBERY") {
+        "green"
+      } else if(offense == "BURGLARY") {
+        "lightblue"
+      } else if(offense == "GRAND LARCENY") {
+        "blue"
+      } else if(offense == "GRAND LARCENY OF MOTOR VEHICLE") {
+        "purple"
+      } else {
+        "black"
+      }
+    }))
+  }
+  
+  
+  
   observeEvent(c(input$boro_layer, input$date_map, input$crime_map, input$boro_map), {
     if(length(input$date_map)) {
       filtered_map = filtered_map %>% filter(.,MONTH_YEAR == input$date_map) %>% na.omit()
@@ -25,53 +49,58 @@ shinyServer(function(input, output, session){
     if(input$crime_map != "ANY CRIME") {
       filtered_map = filtered_map %>% filter(.,OFNS_DESC == input$crime_map)
     }
-
-    print(filtered_map)
-
+    icons = awesomeIcons(
+      icon = "ion-alert-circled",
+      library = "ion",
+      markerColor = getColor(filtered_map)
+    )
     leafletProxy("map", data = filtered_map) %>% 
       clearMarkerClusters() %>%
-      addMarkers(~Longitude, ~Latitude,
-                 clusterOptions = markerClusterOptions(),
-                 popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
-                               "Additional Details:", map_filter()$PD_DESC, "<br>",
-                               "Date Occurred:", map_filter()$DATE, "<br>",
-                               "Time Occurred:", map_filter()$TIME, "<br>")) %>%
-                               {ifelse(input$boro_layer, leafletProxy("map") %>% addPolygons(data=boro_layer,
-                                                               color = topo.colors(5,alpha = NULL),
-                                                               fillColor = topo.colors(5,alpha = NULL),
-                                                               smoothFactor = .5,
-                                                               layerId = LETTERS[1:6]),leafletProxy("map") %>% removeShape(layerId = LETTERS[1:6]))}
+      addAwesomeMarkers(~Longitude, ~Latitude, icon = icons,
+                        clusterOptions = markerClusterOptions(),
+                        popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
+                                      "Additional Details:", map_filter()$PD_DESC, "<br>",
+                                      "Date Occurred:", map_filter()$DATE, "<br>",
+                                      "Time Occurred:", map_filter()$TIME, "<br>")) %>%
+                                      {ifelse(input$boro_layer, 
+                                              leafletProxy("map") %>% 
+                                                addPolygons(data=boro_layer,
+                                                            color = topo.colors(5,alpha = NULL),
+                                                            fillColor = topo.colors(5,alpha = NULL),
+                                                            smoothFactor = .5,
+                                                            layerId = LETTERS[1:6]),
+                                              leafletProxy("map") %>% removeShape(layerId = LETTERS[1:6]))}
   })
-      # if(input$boro_layer) {
-      #   output$map = renderLeaflet({
-      #     leaflet(map_filter()) %>%
-      #       addProviderTiles("Esri.WorldStreetMap") %>%
-      #       addMarkers(~Longitude, ~Latitude,
-      #                  clusterOptions = markerClusterOptions(), 
-      #                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
-      #                                "Additional Details:", map_filter()$PD_DESC, "<br>",
-      #                                "Date Occurred:", map_filter()$DATE, "<br>",
-      #                                "Time Occurred:", map_filter()$TIME, "<br>")) %>%
-    #       addPolygons(data=boro_layer,
-    #                   color = topo.colors(5,alpha = NULL),
-    #                   fillColor = topo.colors(5,alpha = NULL),
-    #                   smoothFactor = .5,
-    #                   layerId = LETTERS[1:6])
-    #   })
-    # } else {
-    #   output$map = renderLeaflet({
-    #     leaflet(map_filter()) %>%
-    #       addProviderTiles("Esri.WorldStreetMap") %>%
-    #       #since we don't have any points, it goes completely zoomed out. wnat to find a way to 
-    #       addMarkers(~Longitude, ~Latitude,
-    #                  clusterOptions = markerClusterOptions(), 
-    #                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
-    #                                "Additional Details:", map_filter()$PD_DESC, "<br>",
-    #                                "Date Occurred:", map_filter()$DATE, "<br>",
-    #                                "Time Occurred:", map_filter()$TIME, "<br>")) %>%
-    #       removeShape(layerId = LETTERS[1:6])
-    #   })
-    # }
+  # if(input$boro_layer) {
+  #   output$map = renderLeaflet({
+  #     leaflet(map_filter()) %>%
+  #       addProviderTiles("Esri.WorldStreetMap") %>%
+  #       addMarkers(~Longitude, ~Latitude,
+  #                  clusterOptions = markerClusterOptions(), 
+  #                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
+  #                                "Additional Details:", map_filter()$PD_DESC, "<br>",
+  #                                "Date Occurred:", map_filter()$DATE, "<br>",
+  #                                "Time Occurred:", map_filter()$TIME, "<br>")) %>%
+  #       addPolygons(data=boro_layer,
+  #                   color = topo.colors(5,alpha = NULL),
+  #                   fillColor = topo.colors(5,alpha = NULL),
+  #                   smoothFactor = .5,
+  #                   layerId = LETTERS[1:6])
+  #   })
+  # } else {
+  #   output$map = renderLeaflet({
+  #     leaflet(map_filter()) %>%
+  #       addProviderTiles("Esri.WorldStreetMap") %>%
+  #       #since we don't have any points, it goes completely zoomed out. wnat to find a way to 
+  #       addMarkers(~Longitude, ~Latitude,
+  #                  clusterOptions = markerClusterOptions(), 
+  #                  popup = paste("Type of Crime:", map_filter()$OFNS_DESC, "<br>",
+  #                                "Additional Details:", map_filter()$PD_DESC, "<br>",
+  #                                "Date Occurred:", map_filter()$DATE, "<br>",
+  #                                "Time Occurred:", map_filter()$TIME, "<br>")) %>%
+  #       removeShape(layerId = LETTERS[1:6])
+  #   })
+  # }
   
   
   ###END OF ALL MAP DRAWING
@@ -90,7 +119,7 @@ shinyServer(function(input, output, session){
   
   ##START OF FILTERS FOR THE MAP
   updateSelectizeInput(session, "boro_filter", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
-  # updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
+  updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
   ##END OF FILTERS FOR THE MAP
   
   ##START OF FILTER FOR THE BORO STATS
@@ -151,7 +180,7 @@ shinyServer(function(input, output, session){
   filtered_crime_boros = nyc_crimes
   grouped_crime_boros = reactive({
     filtered_crime_boros = filtered_crime_boros %>% filter(., OFNS_DESC == input$c_crime_stats)
-  return(filtered_crime_boros)
+    return(filtered_crime_boros)
   })
   ##END OF CRIME GRAPH FILTERS
   ###END OF REACTIVE
@@ -166,7 +195,7 @@ shinyServer(function(input, output, session){
       summarize(count = n())
     ggplot(filtered_boro_crimes) + geom_line(aes(x = YEAR, y = count, color = OFNS_DESC, group = OFNS_DESC), stat = "identity")
   })
-
+  
   #MONTH TO MONTH
   output$boro_month_plot = renderPlot({
     filtered_boro_crimes = grouped_boro_crimes() %>% 
@@ -190,7 +219,7 @@ shinyServer(function(input, output, session){
     filtered_boro_crimes$DOW = factor(filtered_boro_crimes$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
     ggplot(filtered_boro_crimes) + geom_line(aes(x = DOW, y = ratio, color = OFNS_DESC, group = OFNS_DESC), stat = "identity")
   })
-
+  
   # #TIME AFTER TIME
   output$boro_time_plot = renderPlot({
     filtered_boro_crimes = grouped_boro_crimes() %>%
@@ -223,7 +252,7 @@ shinyServer(function(input, output, session){
     filtered_crime_boros$MONTH = factor(filtered_crime_boros$MONTH, levels=month.name[1:12])
     ggplot(filtered_crime_boros) + geom_line(aes(x = MONTH, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
   })
-
+  
   #DOW
   output$crime_DOW_plot = renderPlot({
     filtered_crime_boros = grouped_crime_boros() %>%
@@ -256,7 +285,7 @@ shinyServer(function(input, output, session){
   output$table <- renderDataTable({
     #DOESN"T DEACTIVATE SEARCHING. WILL COME BACK TO ***[XX]
     options = list(searching = FALSE)
-    datatable(data_filter(), rownames=TRUE) %>%
+    datatable(data_filter(), rownames=TRUE, options = list(columnDefs = list(list(visible = FALSE, targets = c(2,3,4,6,7,13,14,15))))) %>%
       formatStyle(input$selected,
                   background="skyblue", fontWeight='bold')
     

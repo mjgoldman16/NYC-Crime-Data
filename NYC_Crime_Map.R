@@ -5,19 +5,15 @@ library(tidyr)
 #D[using i, calculate j, grouped by k]
 
 ###TO DO:
-#ADD IN BORO AND CRIME GRAPHS
 #FILTER SO ALL DATA IS PROPER CASE/NOT A BROKEN CAPSLOCK.(USE REGULAR EXPRESSIONS TO MAKE SURE SPACES ARE ALL SET)
-#*ADD ABOUT THE DATA/ABOUT ME PAGE
 #HEATMAP OF CRIMES
-#DON'T SHOW THE ADDED COLUMNS IN THE DT TABLE
-#
+#CLEAN UP BORO AND CRIME GRAPHS
 
 ###STRETCH GOALS:
 #reverse look up 
 #Alter map color to something nicer
 #make it so boro and crime stats are just one tab with an absolute panel on top to pick which one you want/what to focus on
-#
-#
+##*ADD ABOUT THE DATA/ABOUT ME PAGE
 #
 
 
@@ -152,7 +148,7 @@ nyc_crimes = left_join(nyc_crimes,pop_data,by = c("YEAR","BORO_NM"))
 
 
 write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
-# saveRDS(nyc_crimes, )
+saveRDS(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.rds")
 #save to rds file 
 
 # View(nyc_crimes)
