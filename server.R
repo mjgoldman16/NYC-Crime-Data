@@ -3,7 +3,6 @@ shinyServer(function(input, output, session){
   
   ### DRAWING OF MAP
   
-  ##[XX]***MAP LAG INTRODUCED BY FIXING LAYER PROBLEM (MAINLY FROM DRAWING). ALSO AUTORESETS VIEW. WILL ASK TA'S ABOUT OPTIMIZING
   ##LIKELY A WAY TO KEEP THE PREVIOUS LAT/LONG ON THE MAP SO IT JUST DRAWS IT RATHER THAN SHIFTING
   
   output$map = renderLeaflet({
@@ -19,19 +18,26 @@ shinyServer(function(input, output, session){
     unname(sapply(df$OFNS_DESC, function(offense) {
       if(offense == "MURDER & NON-NEGL. MANSLAUGHTER") {
         "red"
-      } else if(offense == "RAPE") {
+      } 
+      else if(offense == "RAPE") {
         "orange" 
-      } else if(offense == "FELONY ASSAULT") {
+      } 
+      else if(offense == "FELONY ASSAULT") {
         "yellow"
-      } else if(offense == "ROBBERY") {
+      } 
+      else if(offense == "ROBBERY") {
         "green"
-      } else if(offense == "BURGLARY") {
+      } 
+      else if(offense == "BURGLARY") {
         "lightblue"
-      } else if(offense == "GRAND LARCENY") {
+      } 
+      else if(offense == "GRAND LARCENY") {
         "blue"
-      } else if(offense == "GRAND LARCENY OF MOTOR VEHICLE") {
+      } 
+      else if(offense == "GRAND LARCENY OF MOTOR VEHICLE") {
         "purple"
-      } else {
+      } 
+      else {
         "black"
       }
     }))
@@ -49,6 +55,7 @@ shinyServer(function(input, output, session){
     if(input$crime_map != "ANY CRIME") {
       filtered_map = filtered_map %>% filter(.,OFNS_DESC == input$crime_map)
     }
+    
     icons = awesomeIcons(
       icon = "ion-alert-circled",
       library = "ion",
@@ -62,15 +69,25 @@ shinyServer(function(input, output, session){
                                       "Additional Details:", map_filter()$PD_DESC, "<br>",
                                       "Date Occurred:", map_filter()$DATE, "<br>",
                                       "Time Occurred:", map_filter()$TIME, "<br>")) %>%
-                                      {ifelse(input$boro_layer, 
-                                              leafletProxy("map") %>% 
-                                                addPolygons(data=boro_layer,
-                                                            color = topo.colors(5,alpha = NULL),
-                                                            fillColor = topo.colors(5,alpha = NULL),
-                                                            smoothFactor = .5,
-                                                            layerId = LETTERS[1:6]),
-                                              leafletProxy("map") %>% removeShape(layerId = LETTERS[1:6]))}
+      {ifelse(input$boro_layer, 
+              leafletProxy("map") %>% 
+                addPolygons(data=boro_layer,
+                            color = topo.colors(5,alpha = NULL),
+                            fillColor = topo.colors(5,alpha = NULL),
+                            smoothFactor = .5,
+                            layerId = LETTERS[1:6]),
+              leafletProxy("map") %>% removeShape(layerId = LETTERS[1:6]))}
+      
   })
+  
+  observeEvent(c(input$search), {
+    if(input$location != "") {
+      loc = geocode(input$location)
+      leafletProxy("map") %>%
+        setView(loc$lon,loc$lat,18)
+    }
+  })
+  
   # if(input$boro_layer) {
   #   output$map = renderLeaflet({
   #     leaflet(map_filter()) %>%
@@ -166,6 +183,7 @@ shinyServer(function(input, output, session){
   })
   ##END MAP
   
+  ##[XX]*** WILL LIKELY GET RID OF THESE AND REPLACE WITH A GRAPH BUTTON
   ##START OF BORO GRAPH FILTERS
   filtered_boro_crimes = nyc_crimes
   grouped_boro_crimes = reactive({

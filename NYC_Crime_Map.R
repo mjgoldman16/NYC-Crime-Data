@@ -13,9 +13,6 @@ library(tidyr)
 #reverse look up 
 #Alter map color to something nicer
 #make it so boro and crime stats are just one tab with an absolute panel on top to pick which one you want/what to focus on
-##*ADD ABOUT THE DATA/ABOUT ME PAGE
-#
-
 
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
@@ -25,21 +22,13 @@ nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_C
 #In order to keep the original file
 nyc_crimes = nyc_crimes_original
 
-#Removing columsn that are not relevant to mapping of the crime location
+#Removing columns that are not relevant to mapping of the crime location
 nyc_crimes[,c("CMPLNT_NUM","CMPLNT_TO_DT","CMPLNT_TO_TM","RPT_DT",
               "CRM_ATPT_CPTD_CD","JURIS_DESC","ADDR_PCT_CD","LOC_OF_OCCUR_DESC", 
               "X_COORD_CD","Y_COORD_CD", "Lat_Lon") := NULL]
 
 #Only want felonies
 nyc_crimes = nyc_crimes[LAW_CAT_CD == "FELONY"]
-
-#***testing accuracy of the data to see if there are missing/inconsistent columns
-nyc_felony_desc = nyc_crimes %>% distinct(KY_CD, OFNS_DESC, PD_CD, PD_DESC) %>% 
-  arrange(KY_CD)
-nyc_felony_desc = as.data.table(nyc_felony_desc)
-
-#Want to make it so you have the name of the public housing. 
-# (there are a few instances where they don't have a name, so it should just say Public Housing or Park)
 
 #Include the public housing name and/or park name, if available. 
 nyc_crimes[,PREM_TYP_DESC := ifelse(PREM_TYP_DESC == "RESIDENCE - PUBLIC HOUSING" & HADEVELOPT != "",
@@ -80,21 +69,21 @@ nyc_crimes = nyc_crimes[KY_CD == 101 |
                           PD_CD == 438]  # Grand larceny from unattended building that was misclassified 
 
 ##Fixing input errors
-#creating (very depressing) functions to fix the incorrect input
+#Creating (very depressing) functions to fix the incorrect input
 fix_RA = function() { list(104, "RAPE")}
 fix_AS = function() { list(106, "FELONY ASSAULT")}
 fix_RO = function() { list(105, "ROBBERY")}
 fix_GL = function() { list(109, "GRAND LARCENY")}
 fix_GLA = function(){ list(110, "GRAND LARCENY OF MOTOR VEHICLE")}
 
-#applying functions
+#Applying functions
 nyc_crimes = nyc_crimes[PD_CD == 157, c("KY_CD", "OFNS_DESC") := fix_RA()]
 nyc_crimes = nyc_crimes[PD_CD == 109, c("KY_CD", "OFNS_DESC") := fix_AS()]
 nyc_crimes = nyc_crimes[PD_CD == 397, c("KY_CD", "OFNS_DESC") := fix_RO()]
 nyc_crimes = nyc_crimes[PD_CD == 405 | PD_CD == 438 | PD_CD == 419, c("KY_CD", "OFNS_DESC") := fix_GL()]
 nyc_crimes = nyc_crimes[PD_CD == 441, c("KY_CD", "OFNS_DESC") := fix_GLA()]
 
-#Entries of fraud/theft were misclassified. Similar for remove public administration/unclassified and
+#Entries of fraud/theft were misclassified. Similar situations seen for remove public administration/unclassified and
 #kidnapping. Don't want to drop murders though (since their PD_CD is NA)
 nyc_crimes = nyc_crimes[!(PD_CD == 739 | PD_CD == 779 | PD_CD == 186) | is.na(PD_CD)]
 
@@ -109,25 +98,24 @@ nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
                          format="%H:%M:%S")
 nyc_crimes$HOUR = as.numeric(substr(nyc_crimes$TIME,1,2))
 
-#Some data is marked as midnight incorrectly (24:00:00). Convert this to be midnight the same day (00:00:00)
-#rather than out of bounds
+#Some data is marked as midnight incorrectly (24:00:00). Convert this to be midnight the same day (00:00:00) rather than out of bounds
 nyc_crimes = nyc_crimes[is.na(TIME)& CMPLNT_FR_TM=="24:00:00",TIME:=0]
 nyc_crimes = setorder(nyc_crimes,DATE,TIME)
 
-
+#Creation of time_of_day helper column
 nyc_crimes[,c("TIME_OF_DAY"):= ifelse(TIME<"05:59:59", "Early Morning",
                                       ifelse(TIME < "11:59:59", "Morning",
                                              ifelse(TIME < "17:59:59", "Afternoon",
                                                     "Evening")))]
 
-#Include the day of the week for the crimes
+#Include the day of the week for the crimes. Fixing levels so days of the week display correctly
 nyc_crimes[,c("DOW"):=c(weekdays(DATE))]
 nyc_crimes$DOW = factor(nyc_crimes$DOW, levels = c("Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
 nyc_crimes[,c("YEAR"):=c(year(DATE))]
 nyc_crimes[,c("MONTH"):=c(month(DATE))]
 nyc_crimes$MONTH = factor(month.name[nyc_crimes$MONTH], levels=month.name[1:12])
 nyc_crimes[,c("MONTH_YEAR"):=paste(MONTH,YEAR)]
-# nyc_crimes$MONTH = levels("January", "February",)
+
 #Dropping the data with no borough label (only ~250 observations, 7 of which have lat/long data, so won't affect mapping much)
 nyc_crimes = nyc_crimes[!(BORO_NM=="")]
 
@@ -147,11 +135,10 @@ pop_data$POPULATION = as.numeric(pop_data$POPULATION)
 nyc_crimes = left_join(nyc_crimes,pop_data,by = c("YEAR","BORO_NM"))
 
 
+#output. will change to cleaned once capslock is fixed
 write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
 saveRDS(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.rds")
-#save to rds file 
 
-# View(nyc_crimes)
 
 #still not an exact match to the summary data listed on the website:
 #http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls

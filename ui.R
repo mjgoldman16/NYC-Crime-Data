@@ -6,11 +6,11 @@ shinyUI(dashboardPage(
     sidebarMenu(
       menuItem("About the Data", tabName = "about", icon = icon("database")),
       menuItem("Maps", tabName = "map_dropdown", icon = icon("bars"),
-               menuItem("Cluster-map", tabName = "map", icon = icon("map")),
-               menuItem("Heat-map", tabName = "heatmap", icon = icon("fire"))),
+             menuItem("Cluster-map", tabName = "map", icon = icon("map")),
+             menuItem("Heat-map", tabName = "heatmap", icon = icon("fire"))),
       menuItem("Statistics", tabName = "stats_dropdown", icon = icon("bars"),
-               menuItem("Borough Statistics", tabName = "boro_stats", icon = icon("bar-chart")),
-               menuItem("Crime Statistics", tabName = "crime_stats", icon = icon("user"))),
+             menuItem("Borough Statistics", tabName = "boro_stats", icon = icon("bar-chart")),
+             menuItem("Crime Statistics", tabName = "crime_stats", icon = icon("user"))),
       menuItem("View the Data", tabName = "table", icon = icon("warning"))
     )
   ),
@@ -33,7 +33,9 @@ shinyUI(dashboardPage(
                             selectizeInput("date_map", label = "Select a Month and Year:", choices = NULL, multiple = FALSE),
                             selectInput("crime_map", label = h3("Select Crime:"), map_crimes),
                             selectInput("boro_map", label = h3("Select a Borough:"), boro_list),
-                            checkboxInput("boro_layer", "Show Boroughs", value = FALSE)
+                            checkboxInput("boro_layer", "Show Boroughs", value = FALSE),
+                            textInput("location", label = h3("Put in an address:"), value = ""),
+                            actionButton("search", label = "Search")
               )
       ),
       tabItem(tabName = "heatmap",

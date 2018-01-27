@@ -9,6 +9,7 @@ library(ggthemes)
 library(plotly)
 library(lubridate)
 library(dplyr)
+library(ggmap)
 
 #READ THE INITIAL DATA
 #readRDS
