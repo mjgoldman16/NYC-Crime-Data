@@ -7,12 +7,15 @@ library(tidyr)
 ###TO DO:
 #FILTER SO ALL DATA IS PROPER CASE/NOT A BROKEN CAPSLOCK.(USE REGULAR EXPRESSIONS TO MAKE SURE SPACES ARE ALL SET)
 #HEATMAP OF CRIMES
-#CLEAN UP BORO AND CRIME GRAPHS
+#CLEAN UP BORO AND CRIME GRAPHS. Make it tighter looking. change to plotly. add graph button so don't have to wait
+#upload to shiny to see if it renders properly
+#look at graphs some more to see if it make sense
 
 ###STRETCH GOALS:
-#reverse look up 
-#Alter map color to something nicer
-#make it so boro and crime stats are just one tab with an absolute panel on top to pick which one you want/what to focus on
+#Alter map color to something nicer?
+#Return an error if the address is not valid in the location look up
+#timelapse of crime? is it possible to set an artificial max. 
+
 
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
