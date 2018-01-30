@@ -1,31 +1,31 @@
 shinyUI(dashboardPage(
+  skin = "black",
   dashboardHeader(
-    title = "NYC Crime Statistics"
+    #[xx]*** make bold and make font color of user panel black
+    title = "NYC Crime Statistics",
+    titleWidth = 300
   ),
   dashboardSidebar(
-    sidebarUserPanel("Michael Goldman", "R Shiny Project",
+    width = 300,
+    sidebarUserPanel("Michael Goldman", "mjgoldman16@gmail.com",
                      image = "https://media-exp2.licdn.com/mpr/mpr/shrinknp_400_400/AAIA_wDGAAAAAQAAAAAAAApdAAAAJGQ0NmY1Y2I2LTA4OWQtNGFiNy1hMDI3LTk0ZjU2YzA1NDQ4MA.jpg"),
     sidebarMenu(
-      menuItem("About the Data", tabName = "about", icon = icon("database")),
       menuItem("Maps", tabName = "map_dropdown", icon = icon("bars"),
                menuItem("Cluster Map", tabName = "map", icon = icon("map")),
                menuItem("Heat Map", tabName = "heatmap", icon = icon("fire"))),
       menuItem("Statistics", tabName = "stats_dropdown", icon = icon("bars"),
                menuItem("Borough Statistics", tabName = "boro_stats", icon = icon("bar-chart")),
                menuItem("Crime Statistics", tabName = "crime_stats", icon = icon("user"))),
-      menuItem("View the Data", tabName = "table", icon = icon("warning"))
+      menuItem("View the Data", tabName = "table", icon = icon("table"))
     )
   ),
   
   #START OF DASHBOARD BODY
   dashboardBody(
     tags$head(
-      tags$link(href = "custom.css"),
-      tags$script(HTML("$('body').addClass('fixed');"))
+      tags$link(rel = "stylesheet", type = 'text/css', href = "custom.css")
     ),
     tabItems(
-      tabItem(tabName = "about",
-              "NOTE ON RAPE: To further protect victim identities, rape and sex crime offenses are not geocoded."),
       tabItem(tabName = "map",
               leafletOutput("map", height = "900", width="100%"),
               absolutePanel(id = "controls", class = "panel panel-default",
@@ -33,15 +33,15 @@ shinyUI(dashboardPage(
                             width = 330, height = "auto", style = "padding: 8px; opacity: 0.92; background: #f7f6fc;",
                             h2("Data Filter"),
                             selectizeInput("date_map", label = "Select a Month and Year:", choices = NULL, multiple = FALSE),
-                            selectInput("crime_map", label = h3("Select Crime:"), map_crimes),
-                            selectInput("boro_map", label = h3("Select a Borough:"), boro_list),
-                            textInput("location", label = h3("Type an address below:"), value = ""),
+                            selectInput("crime_map", label = "Select Crime:", map_crimes),
+                            selectInput("boro_map", label = "Select a Borough:", boro_list),
+                            textInput("location", label = "Type an address below:", value = ""),
                             actionButton("search", label = "Find Address"),
                             checkboxInput("boro_layer", "Show Boroughs", value = FALSE)
               )
       ),
       tabItem(tabName = "heatmap",
-               leafletOutput("heat", height = "900", width="100%"),
+              leafletOutput("heat", height = "900", width="100%"),
               absolutePanel(id = "controls", class = "panel panel-default",
                             draggable = TRUE, top = 160, right = "auto", bottom = "auto",
                             width = 330, height = "auto", style = "padding: 8px; opacity: 0.92; background: #f7f6fc;",
@@ -54,41 +54,30 @@ shinyUI(dashboardPage(
               )
       ),
       tabItem(tabName = "boro_stats",
-              absolutePanel(top = 45, left = 0, right = 0,
-                            column(4, selectizeInput("b_boro_stats",label="Pick a Borough to focus on:", choices = NULL, multiple = FALSE)),
-                            column(4, selectizeInput("b_crime_stats", label = "Pick the crimes you would like to graph", choices = NULL, multiple = TRUE)),
-                            style = "padding: 8px; padding-left: 240px; border-bottom: 1px solid #CCC; background: #FFFFEE;"
-                            ##MAKE THIS ON THE RIGHT SIDE OF THE SELECTIZE
-                            # column(4,actionButton("graph_boro_stats", "Graph"),  style = "padding-top: 20px")
-              ),
-              h1("_"), #***[XX] used to pad the text/graphs underneath the absolute panel. Will fix later
-  
-              ##[xx]***
-              box(plotOutput("boro_year_plot"), style = "padding: 8px"),
+              column(3, selectizeInput("b_boro_stats",label="Pick a Borough to focus on:", choices = NULL, multiple = FALSE)),
+              column(4, selectizeInput("b_crime_stats", label = "Pick the Crimes you would like to graph", choices = NULL, multiple = TRUE)),
+              ##MAKE THIS ON THE RIGHT SIDE OF THE SELECTIZE
+              # column(4,actionButton("graph_boro_stats", "Graph"),  style = "padding-top: 20px")
+              fluidRow(box(plotOutput("boro_year_plot")),
               box(plotOutput("boro_month_plot")),
               box(plotOutput("boro_DOW_plot")),
-              box(plotOutput("boro_time_plot"))
+              box(plotOutput("boro_time_plot")))
               # plotOutput("boro_legend")
       ),
       tabItem(tabName = "crime_stats",
-              absolutePanel(top = 45, left = 0, right = 0,
-                            selectizeInput("c_crime_stats",label="Pick a Crime to focus on:", choices = NULL, multiple = FALSE),
-                            style = "padding: 8px; padding-left: 240px; border-bottom: 1px solid #CCC; background: #FFFFEE;"
-                            ##MAKE THIS ON THE RIGHT SIDE OF THE SELECTIZE
-              ),
-              h1("_"), #***[XX] used to pad the text/graphs underneath the absolute panel. Will fix later
-              box(plotOutput("crime_year_plot")),
+              column(12,selectizeInput("c_crime_stats",label="Pick a Crime to focus on:", choices = NULL, multiple = FALSE)),
+              fluidRow(box(plotOutput("crime_year_plot")),
               box(plotOutput("crime_month_plot")),
               box(plotOutput("crime_DOW_plot")),
-              box(plotOutput("crime_time_plot"))
+              box(plotOutput("crime_time_plot")))
       ),
       #View the entire data
       tabItem(tabName = "table",
-              column(4,selectizeInput("crimes",label="Pick a Crime:",choices= NULL, multiple = TRUE)),
-              column(4,selectizeInput("dow",label="Pick a Day of the Week:",choices= NULL, multiple = TRUE)),
-              column(4,selectizeInput("crime_time", label="Pick a Time:", choices = NULL, multiple = TRUE)),
-              column(4,selectizeInput("boro_filter", label="Pick a Borough:", choices = NULL, multiple = TRUE)),
-              dataTableOutput("table")
+              fluidRow(column(3,selectizeInput("crimes",label="Pick a Crime:",choices= NULL, multiple = TRUE)),
+              column(3,selectizeInput("dow",label="Pick a Day of the Week:",choices= NULL, multiple = TRUE)),
+              column(3,selectizeInput("crime_time", label="Pick a Time:", choices = NULL, multiple = TRUE)),
+              column(3,selectizeInput("boro_filter", label="Pick a Borough:", choices = NULL, multiple = TRUE)),
+              dataTableOutput("table"))
       )
     )
   )

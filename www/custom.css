@@ -1,11 +1,5 @@
-/* navbar (rest of the header) */
-.skin-blue .main-header .navbar {
-  position: fixed; 
-  overflow: visible;
-}        
-
-/* main sidebar */
-.skin-blue .main-sidebar {
-  position: fixed; 
-  overflow: visible;
+.main-header .logo {
+  font-family: "Georgia", Times, "Times New Roman", serif;
+  font-weight: bold;
+  font-size: 24px;
 }
