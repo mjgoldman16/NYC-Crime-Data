@@ -68,6 +68,7 @@ shinyUI(dashboardPage(
               box(plotOutput("boro_month_plot")),
               box(plotOutput("boro_DOW_plot")),
               box(plotOutput("boro_time_plot"))
+              # plotOutput("boro_legend")
       ),
       tabItem(tabName = "crime_stats",
               absolutePanel(top = 45, left = 0, right = 0,

@@ -190,7 +190,8 @@ shinyServer(function(input, output, session){
   ##START OF CRIME GRAPH FILTERS
   filtered_crime_boros = nyc_crimes
   grouped_crime_boros = reactive({
-    filtered_crime_boros = filtered_crime_boros %>% filter(., OFNS_DESC == input$c_crime_stats)
+    filtered_crime_boros = filtered_crime_boros %>% filter(., OFNS_DESC == input$c_crime_stats) %>%
+      group_by(., BORO_NM)
     return(filtered_crime_boros)
   })
   ##END OF CRIME GRAPH FILTERS
@@ -202,13 +203,15 @@ shinyServer(function(input, output, session){
   output$boro_year_plot = renderPlot({
     #keep in absolute terms to see general crime trends
     filtered_boro_crimes = grouped_boro_crimes() %>%
-      group_by(., OFNS_DESC, YEAR) %>%
-      summarize(count = n())
+      group_by(., OFNS_DESC, YEAR, POPULATION) %>%
+      mutate(ratio = n()*10000/POPULATION) %>%
+      distinct()
     ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = YEAR, y = count, color = OFNS_DESC, group = OFNS_DESC), stat = "identity", size = 1) + 
+      geom_line(aes(x = YEAR, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
       theme_bw() + 
-      theme(text = element_text(size=16)) +
-      labs(title = "Crime Trends by Year", x = "Year", y = "Total Number of Crimes")
+      theme(text = element_text(size=16), legend.position = "bottom") +
+      guides(color = guide_legend((title = "Types of Crimes:"))) +
+      labs(title = "Total Crimes by Year (per 10,000)", x = "Year", y = "Number of Crimes (per 10,000 People)")
   })
   
   #MONTH TO MONTH
@@ -221,11 +224,11 @@ shinyServer(function(input, output, session){
       distinct()
     filtered_boro_crimes$MONTH = factor(filtered_boro_crimes$MONTH, levels=month.name[1:12])
     ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = MONTH, y = ratio, color = OFNS_DESC, group = OFNS_DESC), stat = "identity", size = 1) + 
+      geom_line(aes(x = MONTH, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
       theme_bw() + 
-      guides(color = "none") +
-      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05)) +
-      labs(title = "Crime Trends by Month", x = "Month", y = "Percentage of Crimes that Occur")
+      guides(color = guide_legend((title = "Types of Crimes:"))) +
+      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+      labs(title = "Crime Trends by Month", x = "Month", y = "Percentage of Crimes that Occurred")
   })
   
   # #DOW
@@ -240,9 +243,9 @@ shinyServer(function(input, output, session){
     ggplot(filtered_boro_crimes) + 
       geom_line(aes(x = DOW, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1)+ 
       theme_bw() + 
-      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05)) +
-      guides(color = "none") +
-      labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occur")
+      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+      guides(color = guide_legend((title = "Types of Crimes:"))) +
+      labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occurred")
   })
   
   # #TIME AFTER TIME
@@ -254,54 +257,82 @@ shinyServer(function(input, output, session){
       mutate(ratio = n()*100/count_total) %>%
       distinct()
     ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = HOUR, y = ratio, color = OFNS_DESC, group = OFNS_DESC), stat = "identity", size = 1) + 
+      geom_line(aes(x = HOUR, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
       theme_bw() + 
-      guides(color = "none") +
-      theme(text = element_text(size=16)) +
-      labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occur")
+      guides(color = guide_legend((title = "Types of Crimes:"))) +
+      theme(text = element_text(size=16), legend.position = "bottom") +
+      labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occurred")
   })
+  
+  # [XX]*** ATTEMPT AT MAKING LEGEND BELOW ALL 4 GRAPHS
+  # output$boro_legend = renderPlot({
+  #   plot.new()
+  #   legend(x="center", ncol=3,legend=c("0-1 km","1-5 km","outside barrier"),
+  #          fill=c("green","orange","red"), title="Fetch")
+  # })
   ##END OF BORO TAB
   
   ##CRIME TAB
   #YEAR TO YEAR
   output$crime_year_plot = renderPlot({
     #keep in absolute terms to see general crime trends
-    filtered_crime_boros = grouped_crime_boros() %>%
+    filtered_crime_boros = filtered_crime_boros %>% 
+      filter(., OFNS_DESC == input$c_crime_stats) %>%
       group_by(., BORO_NM, YEAR, POPULATION) %>%
       summarize(count = n())
-    ggplot(filtered_crime_boros) + geom_line(aes(x = YEAR, y = (count/POPULATION)*10000, color = BORO_NM, group = BORO_NM), stat = "identity")
+    ggplot(filtered_crime_boros) + 
+      geom_line(aes(x = YEAR, y = (count/POPULATION)*10000, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+      theme_bw() + 
+      theme(text = element_text(size=16), legend.position = "bottom") +
+      guides(color = guide_legend((title = "Boroughs:"))) +
+      labs(title = "Total Crimes by Year (per 10,000)", x = "Year", y = "Number of Crimes (per 10,000 People)")
   })
   
   #MONTH TO MONTH
   output$crime_month_plot = renderPlot({
     filtered_crime_boros = grouped_crime_boros() %>%
-      mutate(avg_pop = mean(POPULATION)) %>%
-      group_by(., BORO_NM, MONTH, avg_pop) %>%
-      mutate(crime_per_10k = n()*10000/avg_pop) %>%
+      mutate(count_total = n()) %>%
+      group_by(., OFNS_DESC, MONTH, count_total) %>%
+      mutate(ratio = n()*100/count_total) %>%
       distinct()
     filtered_crime_boros$MONTH = factor(filtered_crime_boros$MONTH, levels=month.name[1:12])
-    ggplot(filtered_crime_boros) + geom_line(aes(x = MONTH, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
+    ggplot(filtered_crime_boros) + 
+      geom_line(aes(x = MONTH, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+      theme_bw() + 
+      guides(color = guide_legend((title = "Boroughs:"))) +
+      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+      labs(title = "Crime Trends by Month", x = "Months", y = "Percentage of Crimes that Occurred")
   })
   
   #DOW
   output$crime_DOW_plot = renderPlot({
     filtered_crime_boros = grouped_crime_boros() %>%
-      mutate(avg_pop = mean(POPULATION)) %>%
-      group_by(., BORO_NM, DOW, avg_pop) %>%
-      mutate(crime_per_10k = n()*10000/avg_pop) %>%
+      mutate(count_total = n()) %>%
+      group_by(., OFNS_DESC, DOW, count_total) %>%
+      mutate(ratio = n()*100/count_total) %>%
       distinct()
     filtered_crime_boros$DOW = factor(filtered_crime_boros$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
-    ggplot(filtered_crime_boros) + geom_line(aes(x = DOW, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
+    ggplot(filtered_crime_boros) + 
+      geom_line(aes(x = DOW, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+      theme_bw() + 
+      guides(color = guide_legend((title = "Boroughs:"))) +
+      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+      labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occurred")
   })
   
   #TIME AFTER TIME
   output$crime_time_plot = renderPlot({
     filtered_crime_boros = grouped_crime_boros() %>%
-      mutate(avg_pop = mean(POPULATION)) %>%
-      group_by(., BORO_NM, HOUR, avg_pop) %>%
-      mutate(crime_per_10k = n()*10000/avg_pop) %>%
+      mutate(count_total = n()) %>%
+      group_by(., OFNS_DESC, HOUR, count_total) %>%
+      mutate(ratio = n()*100/count_total) %>%
       distinct()
-    ggplot(filtered_crime_boros) + geom_line(aes(x = HOUR, y = crime_per_10k, color = BORO_NM, group = BORO_NM), stat = "identity")
+    ggplot(filtered_crime_boros) + 
+      geom_line(aes(x = HOUR, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+      theme_bw() + 
+      guides(color = guide_legend((title = "Boroughs:"))) +
+      theme(text = element_text(size=16), legend.position = "bottom") +
+      labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occurred")
   })
   
   
