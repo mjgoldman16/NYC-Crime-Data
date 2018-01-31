@@ -2,18 +2,11 @@ library(data.table)
 library(dplyr)
 library(chron)
 library(tidyr)
-#D[using i, calculate j, grouped by k]
-
-###TO DO:
-#FILTER SO ALL DATA IS PROPER CASE/NOT A BROKEN CAPSLOCK.(USE REGULAR EXPRESSIONS TO MAKE SURE SPACES ARE ALL SET)
-#add graph button so don't have to wait
-#upload to shiny to see if it renders properly
-#ggplotly?
 
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
 nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
-                   header=TRUE)
+                            header=TRUE)
 
 #In order to keep the original file
 nyc_crimes = nyc_crimes_original
@@ -23,7 +16,7 @@ nyc_crimes[,c("CMPLNT_NUM","CMPLNT_TO_DT","CMPLNT_TO_TM","RPT_DT",
               "CRM_ATPT_CPTD_CD","JURIS_DESC","ADDR_PCT_CD","LOC_OF_OCCUR_DESC", 
               "X_COORD_CD","Y_COORD_CD", "Lat_Lon") := NULL]
 
-#Only want felonies
+#Keeping only felonies
 nyc_crimes = nyc_crimes[LAW_CAT_CD == "FELONY"]
 
 #Include the public housing name and/or park name, if available. 
@@ -45,7 +38,7 @@ nyc_crimes[,PREM_TYP_DESC := ifelse(PREM_TYP_DESC == "RESIDENCE - PUBLIC HOUSING
 #Other interesting crimes to potentially look at: 124 = kidnapping, 119 = DUI, 117 = dangerous drugs
 # 118 = dangerous weapons
 
-                          #Murders
+#Murders
 nyc_crimes = nyc_crimes[KY_CD == 101 |
                           #Rapes
                           KY_CD == 104 |
@@ -56,7 +49,7 @@ nyc_crimes = nyc_crimes[KY_CD == 101 |
                           #Burglary
                           KY_CD == 107 |
                           #Robbery
-                          KY_CD == 105 | #an instance of Grand larceny with a robbery CD code. PD_CD = 419 ***WILL FIX***
+                          KY_CD == 105 | #an instance of Grand larceny with a robbery CD code. PD_CD = 419
                           PD_CD == 397 | #Robbery, open area unclassified that was misclassified
                           #Grand Larceny (including auto)
                           KY_CD == 109 |
@@ -64,7 +57,7 @@ nyc_crimes = nyc_crimes[KY_CD == 101 |
                           PD_CD == 405 | # Grand larceny by credit card theft that was misclassified
                           PD_CD == 438]  # Grand larceny from unattended building that was misclassified 
 
-##Fixing input errors
+#Fixing input errors
 #Creating (very depressing) functions to fix the incorrect input
 fix_RA = function() { list(104, "RAPE")}
 fix_AS = function() { list(106, "FELONY ASSAULT")}
@@ -80,7 +73,7 @@ nyc_crimes = nyc_crimes[PD_CD == 405 | PD_CD == 438 | PD_CD == 419, c("KY_CD", "
 nyc_crimes = nyc_crimes[PD_CD == 441, c("KY_CD", "OFNS_DESC") := fix_GLA()]
 
 #Entries of fraud/theft were misclassified. Similar situations seen for remove public administration/unclassified and
-#kidnapping. Don't want to drop murders though (since their PD_CD is NA)
+#kidnapping. Don't want to drop murders since their PD_CD is NA
 nyc_crimes = nyc_crimes[!(PD_CD == 739 | PD_CD == 779 | PD_CD == 186) | is.na(PD_CD)]
 
 
@@ -89,13 +82,13 @@ nyc_crimes$DATE = as.Date(nyc_crimes$CMPLNT_FR_DT,"%m/%d/%Y")
 nyc_crimes = nyc_crimes[DATE>"2005-12-31" & !(is.na(DATE))]
 
 #Edit time to be a time factor
-#[xx]*** THIS SEEMS REDUNDANT. WILL ASK ABOUT IT
-nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
-                         format="%H:%M:%S")
+# nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
+#                          format="%H:%M:%S")
+colnames(nyc_crimes)[2] = "TIME"
 nyc_crimes$HOUR = as.numeric(substr(nyc_crimes$TIME,1,2))
 
 #Some data is marked as midnight incorrectly (24:00:00). Convert this to be midnight the same day (00:00:00) rather than out of bounds
-nyc_crimes = nyc_crimes[is.na(TIME)& CMPLNT_FR_TM=="24:00:00",TIME:=0]
+nyc_crimes = nyc_crimes[TIME=="24:00:00", c("TIME"):="00:00:00"]
 nyc_crimes = setorder(nyc_crimes,DATE,TIME)
 
 #Creation of time_of_day helper column
@@ -117,13 +110,13 @@ nyc_crimes = nyc_crimes[!(BORO_NM=="")]
 
 
 #Delete columns that are combined together or that were copied
-nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT","CMPLNT_FR_TM", "KY_CD", "PD_CD") := NULL]
+nyc_crimes = nyc_crimes[,c("PARKS_NM","HADEVELOPT","LAW_CAT_CD","CMPLNT_FR_DT", "KY_CD", "PD_CD") := NULL]
 nyc_crimes = setcolorder(nyc_crimes, c("DATE", "YEAR", "MONTH", "MONTH_YEAR", "TIME", "HOUR", "TIME_OF_DAY", "DOW", "OFNS_DESC", "PD_DESC", 
                                        "BORO_NM", "PREM_TYP_DESC", "Latitude", "Longitude"))
 
-#ADDING IN POPULATION DATA
+#Adding in population data
 pop_data = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYC borough population.csv",
-                            header=TRUE)
+                 header=TRUE)
 pop_data = pop_data[,r:=NULL]
 pop_data = gather(pop_data, key="YEAR",value="POPULATION", 2:13)
 pop_data$YEAR = as.numeric(pop_data$YEAR)
@@ -131,11 +124,6 @@ pop_data$POPULATION = as.numeric(pop_data$POPULATION)
 nyc_crimes = left_join(nyc_crimes,pop_data,by = c("YEAR","BORO_NM"))
 
 
-#output. will change to cleaned once capslock is fixed
-write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.csv")
-saveRDS(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SEMICLEAN.rds")
-
-
-#still not an exact match to the summary data listed on the website:
-#http://www1.nyc.gov/assets/nypd/downloads/excel/analysis_and_planning/seven-major-felony-offenses-2000-2016.xls
-
+#output. 
+write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES.csv")
+saveRDS(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES.rds")

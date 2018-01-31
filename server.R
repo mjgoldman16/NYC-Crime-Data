@@ -1,16 +1,17 @@
 shinyServer(function(input, output, session){
-  
-  
-  ### DRAWING OF MAP
+  ################################## DRAWING OF INITIAL CLUSTER MAP ##################################
   output$map = renderLeaflet({
     leaflet() %>%
       addProviderTiles("Esri.WorldStreetMap") %>%
       setView(-73.945242, 40.710610, 11)
   })
+  ##################################################################################################
+
   
-  ##DRAW THE MAP  
-  filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
   
+  ###PURPOSE: take in a data frame and assigns colors to map icons based on crime type
+  ###OUTPUT: Strings (of various colors)
+  ###NOTE: Function had to be unnamed because of interaction between addingAwesomeMarkers and named vectors
   getColor = function(df) {
     unname(sapply(df$OFNS_DESC, function(offense) {
       if(offense == "MURDER & NON-NEGL. MANSLAUGHTER") {
@@ -37,8 +38,13 @@ shinyServer(function(input, output, session){
     }))
   }
   
+  
+  ################################## ADDING OF CLUSTER MARKERS ##################################
   filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
+  
+  #Check if any of the cluster map filters or borough layers have been triggered
   observeEvent(c(input$boro_layer, input$date_map, input$crime_map, input$boro_map), {
+    #Filter the data accordingly
     if(length(input$date_map)) {
       filtered_map = filtered_map %>% filter(.,MONTH_YEAR == input$date_map) %>% na.omit()
     }
@@ -49,11 +55,14 @@ shinyServer(function(input, output, session){
       filtered_map = filtered_map %>% filter(.,OFNS_DESC == input$crime_map)
     }
     
+    #Initialize icons, calling getColor to find the proper color
     icons = awesomeIcons(
       icon = "ion-alert-circled",
       library = "ion",
       markerColor = getColor(filtered_map)
     )
+    
+    #Add markers based on the filtered data
     leafletProxy("map", data = filtered_map) %>% 
       clearMarkerClusters() %>%
       addAwesomeMarkers(~Longitude, ~Latitude, icon = icons,
@@ -73,7 +82,7 @@ shinyServer(function(input, output, session){
     
   })
   
-  #recieve over_query_limit: api key 
+  #Check to see if an address was put into the search bar
   observeEvent(c(input$search), {
     if(input$location != "") {
       loc = geocode(input$location)
@@ -81,20 +90,28 @@ shinyServer(function(input, output, session){
         setView(loc$lon,loc$lat,17)
     }
   })
+  ###############################################################################################
   
-  #addWebGLHeatmap
   
+  
+  ################################## DRAWING OF INITIAL HEAT MAP ##################################
   output$heat = renderLeaflet({
     leaflet() %>%
       addProviderTiles(providers$CartoDB.DarkMatter) %>%
       setView(-73.945242, 40.710610, 11) %>%
-      addPolygons(data = boroughs,
+      addPolygons(data = boro_layer,
                   stroke = FALSE, 
                   smoothFactor = 0.5)
   })
+  #################################################################################################
   
+  
+  
+  ################################## ADDING OF HEAT INDICATORS ##################################
   filtered_map = nyc_crimes[!(is.na(Latitude) | is.na(Longitude))]
+  #See if any of the heat map filters were triggered
   observeEvent(c(input$date_heat, input$crime_heat, input$boro_heat), {
+    #Filter the data accordingly
     if(length(input$date_heat)) {
       filtered_map = filtered_map %>% filter(.,MONTH_YEAR == input$date_heat) %>% na.omit()
     }
@@ -104,12 +121,15 @@ shinyServer(function(input, output, session){
     if(input$crime_heat != "ANY CRIME") {
       filtered_map = filtered_map %>% filter(.,OFNS_DESC == input$crime_heat)
     }
+    
+    #Add heat indicators based on the filtered data
     leafletProxy("heat", data = filtered_map) %>%
       clearWebGLHeatmap() %>%
       addWebGLHeatmap(~Longitude, ~Latitude,
-        size=15, units = "px", alphaRange = .5)
+                      size=15, units = "px", alphaRange = .5)
   })
   
+  #Check to see if an address was put into the search bar
   observeEvent(c(input$search_heat), {
     if(input$location != "") {
       loc = geocode(input$location_heat)
@@ -117,13 +137,13 @@ shinyServer(function(input, output, session){
         setView(loc$lon,loc$lat,17)
     }
   })
+  ###############################################################################################
   
   
   
-  ###END OF ALL MAP DRAWING
+  ################################## PROVIDING CHOICES FOR SELECTIZEINPUT ##################################
   
-  ### UPDATING SELECTIZE INPUTS
-  ## INPUT FILTERS FOR THE TABLE
+  ##### INPUT FILTERS FOR THE TABLE#####
   updateSelectizeInput(session, "crimes", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
   updateSelectizeInput(session, "dow", choices = unique(nyc_crimes$DOW), server = TRUE)
   updateSelectizeInput(session, "crime_time", 
@@ -133,31 +153,27 @@ shinyServer(function(input, output, session){
                                    "Evening (18:00-23:59)" = "Evening"), 
                        server = TRUE)
   updateSelectizeInput(session, "boro_filter", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
-  ##END OF FILTERS FOR THE TABLE
+  ######################################
   
-  ##START OF FILTERS FOR THE MAP
-  #CLUSTER MAP
+  ##### INPUT FILTERS FOR THE CLUSTER AND HEAT MAPS #####
   updateSelectizeInput(session, "date_map", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
-  #END OF CLUSTER MAP
-  
-  #HEAT MAP
   updateSelectizeInput(session, "date_heat", choices = unique(nyc_crimes$MONTH_YEAR), server = TRUE)
-  #END OF HEAT MAP
-  ##END OF FILTERS FOR THE MAP
+  #######################################################
   
-  ##START OF FILTER FOR THE BORO STATS
+  ##### INPUT FILTERS FOR THE BOROUGH STASTITICS #####
   updateSelectizeInput(session, "b_boro_stats", choices = unique(nyc_crimes$BORO_NM), server = TRUE)
   updateSelectizeInput(session, "b_crime_stats", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
-  ##END OF FILTER FOR BORO STATS
+  ####################################################
   
-  ##START OF FILTER FOR THE CRIME STATS
+  ##### INPUT FILTERS FOR THE CRIME STASTITICS #####
   updateSelectizeInput(session, "c_crime_stats", choices = unique(nyc_crimes$OFNS_DESC), server = TRUE)
-  ##END OF CRIME FILTER STATS
-  ### END OF FILTERS
+  ####################################################
+  
+  ##########################################################################################################
   
   
-  ###REACTIVE FILTERS
-  ##TABLE
+  
+  ################################## FILTERING OF THE DATATABLE ##################################
   filtered_data = nyc_crimes
   data_filter = reactive({
     if(length(input$crimes)) {
@@ -172,276 +188,201 @@ shinyServer(function(input, output, session){
     if(length(input$boro_filter)) {
       filtered_data = filtered_data %>% filter(.,BORO_NM %in% input$boro_filter)
     }
-    filtered_data
+    return(filtered_data)
   })
-  ##END TABLE
+  ################################################################################################
   
-  ##[XX]*** WILL LIKELY GET RID OF THESE AND REPLACE WITH A GRAPH BUTTON
-  ##START OF BORO GRAPH FILTERS
+
+  
+  ################################## FILTERING AND PLOTTING OF BOROUGH STATISTICS ##################################
   filtered_boro_crimes = nyc_crimes
-  grouped_boro_crimes = reactive({
+  observeEvent(c(input$b_graph), {
+    #This filtering and grouping will need to occur for all of the four graphs
     filtered_boro_crimes = filtered_boro_crimes %>% filter(.,BORO_NM == input$b_boro_stats)
     filtered_boro_crimes = filtered_boro_crimes %>% filter(.,OFNS_DESC %in% input$b_crime_stats) %>%
       group_by(., OFNS_DESC)
-    return(filtered_boro_crimes)
+    
+    ##### YEAR TO YEAR #####
+    output$boro_year_plot = renderPlot({
+      withProgress({
+        setProgress(message = "Drawing Year plot...")
+        #Want account for population when counting total number of crimes
+        filtered_boro_crimes = filtered_boro_crimes %>%
+          group_by(., OFNS_DESC, YEAR, POPULATION) %>%
+          mutate(ratio = n()*10000/POPULATION) %>%
+          distinct()
+        ggplot(filtered_boro_crimes) + 
+          geom_line(aes(x = YEAR, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
+          theme_bw() + 
+          theme(text = element_text(size=16), legend.position = "bottom") +
+          guides(color = guide_legend((title = "Types of Crimes:"))) +
+          labs(title = "Total Crimes by Year (per 10,000)", x = "Year", y = "Number of Crimes (per 10,000 People)")
+      })
+    })
+    ########################
+    
+    ###### MONTH TO MONTH #####
+    output$boro_month_plot = renderPlot({
+      withProgress({
+        setProgress(message = "Drawing Month plot...")
+        filtered_boro_crimes = filtered_boro_crimes %>% 
+          #Display the percentage of a specific type of crime that occur within that month (eg: 8% of assualts occur in january vs 14% in march)
+          mutate(count_total = n()) %>%
+          group_by(., OFNS_DESC, MONTH, count_total) %>%
+          mutate(ratio = n()*100/count_total) %>%
+          distinct()
+        filtered_boro_crimes$MONTH = factor(filtered_boro_crimes$MONTH, levels=month.name[1:12])
+        ggplot(filtered_boro_crimes) + 
+          geom_line(aes(x = MONTH, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
+          theme_bw() + 
+          guides(color = guide_legend((title = "Types of Crimes:"))) +
+          theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+          labs(title = "Crime Trends by Month", x = "Month", y = "Percentage of Crimes that Occurred")
+      })
+    })
+    ###########################
+    
+    ##### DAY OF THE WEEK #####
+    output$boro_DOW_plot = renderPlot({
+      withProgress({
+        setProgress(message = "Drawing DOW plot...")
+        filtered_boro_crimes = filtered_boro_crimes %>%
+          #Display the percentage of a specific type of crime that occur within that day (eg: 3% of murders occur on monday vs 9% in wednesday)
+          mutate(count_total = n()) %>%
+          group_by(., OFNS_DESC, DOW, count_total) %>%
+          mutate(ratio = n()*100/count_total) %>%
+          distinct()
+        filtered_boro_crimes$DOW = factor(filtered_boro_crimes$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+        ggplot(filtered_boro_crimes) + 
+          geom_line(aes(x = DOW, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1)+ 
+          theme_bw() + 
+          theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+          guides(color = guide_legend((title = "Types of Crimes:"))) +
+          labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occurred")
+      })
+    })
+    ###########################
+    
+    ##### TIME OF DAY #####
+    output$boro_time_plot = renderPlot({
+      withProgress({
+        setProgress(message = "Drawing Tinme of Day plot...")
+        filtered_boro_crimes = filtered_boro_crimes %>%
+          #Display the percentage of a specific type of crime that occur a certain time of day (eg: 3% of murders occur at 6:00 vs 9% at 20:00)
+          mutate(count_total = n()) %>%
+          group_by(., OFNS_DESC, HOUR, count_total) %>%
+          mutate(ratio = n()*100/count_total) %>%
+          distinct()
+        ggplot(filtered_boro_crimes) + 
+          geom_line(aes(x = HOUR, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
+          theme_bw() + 
+          guides(color = guide_legend((title = "Types of Crimes:"))) +
+          theme(text = element_text(size=16), legend.position = "bottom") +
+          labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occurred")
+      })
+    })
+    #######################
   })
-  ##END OF BORO GRAPH FILTERS
+  ##################################################################################################################
   
-  ##START OF CRIME GRAPH FILTERS
+  
+  ################################## FILTERING AND PLOTTING OF CRIME STATISTICS ##################################
   filtered_crime_boros = nyc_crimes
   grouped_crime_boros = reactive({
+    #All four graphs will have to be filtered and grouped initially
     filtered_crime_boros = filtered_crime_boros %>% filter(., OFNS_DESC == input$c_crime_stats) %>%
       group_by(., BORO_NM)
     return(filtered_crime_boros)
   })
-  ##END OF CRIME GRAPH FILTERS
-  ###END OF REACTIVE
-  
-  ###RENDERING PLOTLY GRAPHS
-  ##BORO TAB
-  #YEAR TO YEAR
-  output$boro_year_plot = renderPlot({
-    #keep in absolute terms to see general crime trends
-    filtered_boro_crimes = grouped_boro_crimes() %>%
-      group_by(., OFNS_DESC, YEAR, POPULATION) %>%
-      mutate(ratio = n()*10000/POPULATION) %>%
-      distinct()
-    ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = YEAR, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
-      theme_bw() + 
-      theme(text = element_text(size=16), legend.position = "bottom") +
-      guides(color = guide_legend((title = "Types of Crimes:"))) +
-      labs(title = "Total Crimes by Year (per 10,000)", x = "Year", y = "Number of Crimes (per 10,000 People)")
-  })
-  
-  #MONTH TO MONTH
-  output$boro_month_plot = renderPlot({
-    filtered_boro_crimes = grouped_boro_crimes() %>% 
-      #This should be in percentage of that amount of crime
-      mutate(count_total = n()) %>%
-      group_by(., OFNS_DESC, MONTH, count_total) %>%
-      mutate(ratio = n()*100/count_total) %>%
-      distinct()
-    filtered_boro_crimes$MONTH = factor(filtered_boro_crimes$MONTH, levels=month.name[1:12])
-    ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = MONTH, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
-      theme_bw() + 
-      guides(color = guide_legend((title = "Types of Crimes:"))) +
-      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
-      labs(title = "Crime Trends by Month", x = "Month", y = "Percentage of Crimes that Occurred")
-  })
-  
-  # #DOW
-  output$boro_DOW_plot = renderPlot({
-    filtered_boro_crimes = grouped_boro_crimes() %>%
-      #This should be in percentage of that amount of crime
-      mutate(count_total = n()) %>%
-      group_by(., OFNS_DESC, DOW, count_total) %>%
-      mutate(ratio = n()*100/count_total) %>%
-      distinct()
-    filtered_boro_crimes$DOW = factor(filtered_boro_crimes$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
-    ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = DOW, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1)+ 
-      theme_bw() + 
-      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
-      guides(color = guide_legend((title = "Types of Crimes:"))) +
-      labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occurred")
-  })
-  
-  # #TIME AFTER TIME
-  output$boro_time_plot = renderPlot({
-    filtered_boro_crimes = grouped_boro_crimes() %>%
-      #This should be in percentage of that amount of crime
-      mutate(count_total = n()) %>%
-      group_by(., OFNS_DESC, HOUR, count_total) %>%
-      mutate(ratio = n()*100/count_total) %>%
-      distinct()
-    ggplot(filtered_boro_crimes) + 
-      geom_line(aes(x = HOUR, y = ratio, color = str_wrap(OFNS_DESC,16), group = OFNS_DESC), stat = "identity", size = 1) + 
-      theme_bw() + 
-      guides(color = guide_legend((title = "Types of Crimes:"))) +
-      theme(text = element_text(size=16), legend.position = "bottom") +
-      labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occurred")
-  })
-  
-  # [XX]*** ATTEMPT AT MAKING LEGEND BELOW ALL 4 GRAPHS
-  # output$boro_legend = renderPlot({
-  #   plot.new()
-  #   legend(x="center", ncol=3,legend=c("0-1 km","1-5 km","outside barrier"),
-  #          fill=c("green","orange","red"), title="Fetch")
-  # })
-  ##END OF BORO TAB
-  
-  ##CRIME TAB
-  #YEAR TO YEAR
+
+  ##### YEAR TO YEAR #####
   output$crime_year_plot = renderPlot({
-    #keep in absolute terms to see general crime trends
-    filtered_crime_boros = filtered_crime_boros %>% 
-      filter(., OFNS_DESC == input$c_crime_stats) %>%
-      group_by(., BORO_NM, YEAR, POPULATION) %>%
-      summarize(count = n())
-    ggplot(filtered_crime_boros) + 
-      geom_line(aes(x = YEAR, y = (count/POPULATION)*10000, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
-      theme_bw() + 
-      theme(text = element_text(size=16), legend.position = "bottom") +
-      guides(color = guide_legend((title = "Boroughs:"))) +
-      labs(title = "Total Crimes by Year (per 10,000)", x = "Year", y = "Number of Crimes (per 10,000 People)")
+    withProgress({
+      setProgress(message = "Drawing Year plot...")
+      #See boro stats for explanation of calculation
+      filtered_crime_boros = filtered_crime_boros %>% 
+        filter(., OFNS_DESC == input$c_crime_stats) %>%
+        group_by(., BORO_NM, YEAR, POPULATION) %>%
+        summarize(count = n())
+      ggplot(filtered_crime_boros) + 
+        geom_line(aes(x = YEAR, y = (count/POPULATION)*10000, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+        theme_bw() + 
+        theme(text = element_text(size=16), legend.position = "bottom") +
+        guides(color = guide_legend((title = "Boroughs:"))) +
+        labs(title = "Total Crimes by Year (per 10,000)", x = "Year", y = "Number of Crimes (per 10,000 People)")
+    })
   })
+  ########################
   
-  #MONTH TO MONTH
+  ##### MONTH TO MONTH #####
   output$crime_month_plot = renderPlot({
-    filtered_crime_boros = grouped_crime_boros() %>%
-      mutate(count_total = n()) %>%
-      group_by(., OFNS_DESC, MONTH, count_total) %>%
-      mutate(ratio = n()*100/count_total) %>%
-      distinct()
-    filtered_crime_boros$MONTH = factor(filtered_crime_boros$MONTH, levels=month.name[1:12])
-    ggplot(filtered_crime_boros) + 
-      geom_line(aes(x = MONTH, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
-      theme_bw() + 
-      guides(color = guide_legend((title = "Boroughs:"))) +
-      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
-      labs(title = "Crime Trends by Month", x = "Months", y = "Percentage of Crimes that Occurred")
+    withProgress({
+      setProgress(message = "Drawing Month plot...")
+      
+      filtered_crime_boros = grouped_crime_boros() %>%
+        mutate(count_total = n()) %>%
+        group_by(., OFNS_DESC, MONTH, count_total) %>%
+        mutate(ratio = n()*100/count_total) %>%
+        distinct()
+      filtered_crime_boros$MONTH = factor(filtered_crime_boros$MONTH, levels=month.name[1:12])
+      ggplot(filtered_crime_boros) + 
+        geom_line(aes(x = MONTH, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+        theme_bw() + 
+        guides(color = guide_legend((title = "Boroughs:"))) +
+        theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+        labs(title = "Crime Trends by Month", x = "Months", y = "Percentage of Crimes that Occurred")
+    })
   })
+  ##########################
   
-  #DOW
+  
+  ##### DAY OF THE WEEK #####
   output$crime_DOW_plot = renderPlot({
-    filtered_crime_boros = grouped_crime_boros() %>%
-      mutate(count_total = n()) %>%
-      group_by(., OFNS_DESC, DOW, count_total) %>%
-      mutate(ratio = n()*100/count_total) %>%
-      distinct()
-    filtered_crime_boros$DOW = factor(filtered_crime_boros$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
-    ggplot(filtered_crime_boros) + 
-      geom_line(aes(x = DOW, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
-      theme_bw() + 
-      guides(color = guide_legend((title = "Boroughs:"))) +
-      theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
-      labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occurred")
+    withProgress({
+      setProgress(message = "Drawing DOW plot...")
+      filtered_crime_boros = grouped_crime_boros() %>%
+        mutate(count_total = n()) %>%
+        group_by(., OFNS_DESC, DOW, count_total) %>%
+        mutate(ratio = n()*100/count_total) %>%
+        distinct()
+      filtered_crime_boros$DOW = factor(filtered_crime_boros$DOW, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+      ggplot(filtered_crime_boros) + 
+        geom_line(aes(x = DOW, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+        theme_bw() + 
+        guides(color = guide_legend((title = "Boroughs:"))) +
+        theme(text = element_text(size=16), axis.text.x = element_text(angle=-45, hjust = -.05), legend.position = "bottom") +
+        labs(title = "Crime Trends by Day of the Week", x = "Days of the Week", y = "Percentage of Crimes that Occurred")
+    })
   })
+  ###########################
   
-  #TIME AFTER TIME
+  ##### TIME OF DAY #####
   output$crime_time_plot = renderPlot({
-    filtered_crime_boros = grouped_crime_boros() %>%
-      mutate(count_total = n()) %>%
-      group_by(., OFNS_DESC, HOUR, count_total) %>%
-      mutate(ratio = n()*100/count_total) %>%
-      distinct()
-    ggplot(filtered_crime_boros) + 
-      geom_line(aes(x = HOUR, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
-      theme_bw() + 
-      guides(color = guide_legend((title = "Boroughs:"))) +
-      theme(text = element_text(size=16), legend.position = "bottom") +
-      labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occurred")
+    withProgress({
+      setProgress(message = "Drawing Time of Day plot...")
+      filtered_crime_boros = grouped_crime_boros() %>%
+        mutate(count_total = n()) %>%
+        group_by(., OFNS_DESC, HOUR, count_total) %>%
+        mutate(ratio = n()*100/count_total) %>%
+        distinct()
+      ggplot(filtered_crime_boros) + 
+        geom_line(aes(x = HOUR, y = ratio, color = str_wrap(BORO_NM,16), group = BORO_NM), stat = "identity", size = 1) +
+        theme_bw() + 
+        guides(color = guide_legend((title = "Boroughs:"))) +
+        theme(text = element_text(size=16), legend.position = "bottom") +
+        labs(title = "Crime Trends by Time of Day", x = "Time of Day (Military Time)", y = "Percentage of Crimes that Occurred")
+    })
   })
+  #######################
+  ################################## FILTERING AND PLOTTING OF CRIME STATISTICS ##################################
   
   
-  
-  
-  ##END OF CRIME TAB
-  ###END OF PLOTLY GRAPHS
-  
-  ###OUTPUTTING THE INTERACTIVE TABLE
-  ###[XX]*** WANT TO HIDE LAT/LONG/TIME OF DAY COLUMNS, KY_CD and PD_CD
+  ################################## DISPLAYING OF DATA TABLE ##################################
   output$table <- renderDataTable({
-    #DOESN"T DEACTIVATE SEARCHING. WILL COME BACK TO ***[XX]
-    options = list(searching = FALSE)
     datatable(data_filter(), rownames=TRUE, options = list(columnDefs = list(list(visible = FALSE, targets = c(2,3,4,6,7,13,14,15))))) %>%
       formatStyle(input$selected,
                   background="skyblue", fontWeight='bold')
     
   })
-  ###END OF TABLE OUTPUT
+  ##############################################################################################
 })
-
-
-
-
-
-
-
-
-
-
-
-
-####CODE TO REFERENCE IN CASE OF ERRORS
-
-
-##START OF ADDING DATA PINPOINTS (CLUSTER)
-# names(nyc_crimes) %>%
-#   walk(function(df) {
-#     l <<- l %>%
-#       addMarkers(data=quakes.df[[df]],
-#                  lng=~long, lat=~lat,
-#                  label=~as.character(mag),
-#                  popup=~as.character(mag),
-#                  group = df,
-#                  clusterOptions = markerClusterOptions(removeOutsideVisibleBounds = F),
-#                  labelOptions = labelOptions(noHide = F,
-#                                              direction = 'auto'))
-#   })
-
-
-#BUILDING OF REACTIVE FILTER
-# crime_filter = reactive({
-#   filtered_data = nyc_crimes %>%
-#   if(length(input$crimes)) {
-#     #Trying to filter on multiple different crimes seleted
-#     filtered_data$c1 = grepl(paste(input$crimes, collapse = "|"), filtered_data$OFNS_CD)
-#   }
-#   else {
-#     #if there is no length in crimes, then give all
-#     filtered_data$c1 = TRUE 
-#     }
-# })
-# 
-# shinyServer(function(input, output, session) {
-#   
-#   updateSelectizeInput(session, 'country', choices = unique(data_test$Country), server = TRUE)
-#   
-#   dataset <- reactive({
-#     data <- data_test
-#     if (length(input$country)){
-#       data$c1 <- grepl(paste(input$country, collapse = "|"), data$Country)
-#     }
-#     else {
-#       data$c1 <- TRUE
-#     }
-#     
-#     if (length(input$geogPref)){
-#       data$c2 <- grepl(paste(input$geogPref, collapse = "|"), data$Region)
-#     }
-#     else {
-#       data$c2 <- TRUE
-#     }
-#     
-#     data[data$c1  & data$c2 ,c("Name", "Contact", "ContactPerson")]
-#   })
-#   
-#   output$results <- DT::renderDataTable(
-#     DT::datatable( dataset(),
-#                    rownames = FALSE, options = list(searchable = FALSE)
-#     )) 
-# })
-
-# leaflet() %>% addTiles() %>% # Add default OpenStreetMap map tiles
-#   addMarkers(lng=-74.0059, lat=40.7128, popup="New York City")
-
-# output$distPlot = renderPlot({
-#   if(input$select == 1) {
-#     x = faithful[,1]
-#   } else if (input$select == 2) {
-#     x = faithful[,2]
-#   }
-#   else {
-#     print("ERROR")
-#   }
-#   bins = input$bins
-#   hist(x, breaks = bins,
-#        col = input$color,
-#        border = "white")
-#   output$value <- renderPrint({ input$select })
-# })
-
-#### NEW SERVER
