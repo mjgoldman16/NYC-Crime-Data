@@ -6,7 +6,7 @@ shinyServer(function(input, output, session){
       setView(-73.945242, 40.710610, 11)
   })
   ##################################################################################################
-
+  
   
   
   ###PURPOSE: take in a data frame and assigns colors to map icons based on crime type
@@ -69,6 +69,7 @@ shinyServer(function(input, output, session){
                         clusterOptions = markerClusterOptions(),
                         popup = paste("Type of Crime:", filtered_map$OFNS_DESC, "<br>",
                                       "Additional Details:", filtered_map$PD_DESC, "<br>",
+                                      "Location:", filtered_map$PREM_TYP_DESC, "<br>",
                                       "Date Occurred:", filtered_map$DATE, "<br>",
                                       "Time Occurred:", filtered_map$TIME, "<br>")) %>%
                                       {ifelse(input$boro_layer, 
@@ -192,7 +193,7 @@ shinyServer(function(input, output, session){
   })
   ################################################################################################
   
-
+  
   
   ################################## FILTERING AND PLOTTING OF BOROUGH STATISTICS ##################################
   filtered_boro_crimes = nyc_crimes
@@ -294,7 +295,7 @@ shinyServer(function(input, output, session){
       group_by(., BORO_NM)
     return(filtered_crime_boros)
   })
-
+  
   ##### YEAR TO YEAR #####
   output$crime_year_plot = renderPlot({
     withProgress({

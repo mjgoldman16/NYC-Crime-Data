@@ -21,7 +21,7 @@ shinyUI(dashboardPage(
       menuItem("View the Data", tabName = "table", icon = icon("table"))
     )
   ),
-
+  
   
   dashboardBody(
     #Creation of CSS custom edits (altering header text)

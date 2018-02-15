@@ -3,9 +3,15 @@ library(dplyr)
 library(chron)
 library(tidyr)
 
+#TO DO:
+# Add in income/demographic information(?)
+# - potentially add in schooling education (??)
+# Add slider for heat map to show change overtime (?)
+
+
 #Loading in in the original file. 5580035 rows
 #Commited so you don't have to re-load the table into R. Just use the _original
-nyc_crimes_original = fread(input="D:/NYC-Data-Science/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
+nyc_crimes_original = fread(input="D:/NYC-Data-Science/Projects/Shiny-Project/Data/NYPD_Complaint_Data_Historic.csv",
                             header=TRUE)
 
 #In order to keep the original file
@@ -85,10 +91,11 @@ nyc_crimes = nyc_crimes[DATE>"2005-12-31" & !(is.na(DATE))]
 # nyc_crimes$TIME = format(as.POSIXct(nyc_crimes$CMPLNT_FR_TM,format="%H:%M:%S"),
 #                          format="%H:%M:%S")
 colnames(nyc_crimes)[2] = "TIME"
-nyc_crimes$HOUR = as.numeric(substr(nyc_crimes$TIME,1,2))
 
 #Some data is marked as midnight incorrectly (24:00:00). Convert this to be midnight the same day (00:00:00) rather than out of bounds
 nyc_crimes = nyc_crimes[TIME=="24:00:00", c("TIME"):="00:00:00"]
+nyc_crimes$HOUR = as.numeric(substr(nyc_crimes$TIME,1,2))
+
 nyc_crimes = setorder(nyc_crimes,DATE,TIME)
 
 #Creation of time_of_day helper column
@@ -123,7 +130,14 @@ pop_data$YEAR = as.numeric(pop_data$YEAR)
 pop_data$POPULATION = as.numeric(pop_data$POPULATION)
 nyc_crimes = left_join(nyc_crimes,pop_data,by = c("YEAR","BORO_NM"))
 
+###FOR SHINY SERVER
+# nyc_crimes$POPULATION = nyc_crimes$POPULATION%/%5
+# nyc_crimes = nyc_crimes[sample(nrow(nyc_crimes),size=243822),]
+# nyc_crimes = setorder(nyc_crimes,DATE,TIME)
 
-#output. 
-write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES.csv")
-saveRDS(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES.rds")
+write.csv(nyc_crimes, "D:/NYC-Data-Science/Projects/Shiny-Project/Data/NYC_CRIMES.csv")
+saveRDS(nyc_crimes, "D:/NYC-Data-Science/Projects/Shiny-Project/Data/NYC_CRIMES.rds")
+
+#SHINY OUTPUT 
+# write.csv(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SHINY.csv")
+# saveRDS(nyc_crimes, "D:/NYC-Data-Science/Shiny-Project/Data/NYC_CRIMES_SHINY.rds")

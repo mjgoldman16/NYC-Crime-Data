@@ -1,0 +1,13 @@
+name: Shiny-Project
+title: Shiny-Project
+username:
+account: mjgoldman16
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 266986
+bundleId: 1206300
+url: https://mjgoldman16.shinyapps.io/Shiny-Project/
+when: 1517701592.09992
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: NYC_Crime_Map.R|Data
